@@ -18,15 +18,22 @@ export class BootScene extends Phaser.Scene {
     // Try loading existing savegame
     SaveSystem.loadGame();
 
+    // Pre-initialize SoundEngine and prefetch audio buffers
+    SoundEngine.getInstance().initContext();
+
     // Start background music and unlock AudioContext on first user touch/interaction
     const startAudio = () => {
       SoundEngine.getInstance().unlockAudio();
     };
+
     window.addEventListener('touchstart', startAudio, { passive: true });
     window.addEventListener('touchend', startAudio, { passive: true });
-    window.addEventListener('pointerdown', startAudio);
-    window.addEventListener('click', startAudio);
-    window.addEventListener('keydown', startAudio);
+    window.addEventListener('pointerdown', startAudio, { passive: true });
+    window.addEventListener('mousedown', startAudio, { passive: true });
+    window.addEventListener('click', startAudio, { passive: true });
+    window.addEventListener('keydown', startAudio, { passive: true });
+
+    this.input.on('pointerdown', startAudio);
 
     // Launch Game Scenes
     this.scene.start('WorldScene');

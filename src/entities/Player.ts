@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SoundEngine } from '../systems/SoundEngine';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private moveSpeed: number = 160;
@@ -71,6 +72,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // Normalize diagonal velocity
     const length = Math.sqrt(vx * vx + vy * vy);
     if (length > 0) {
+      if (!SoundEngine.getInstance().getIsUnlocked()) {
+        SoundEngine.getInstance().unlockAudio();
+      }
+
       vx = (vx / length) * this.moveSpeed;
       vy = (vy / length) * this.moveSpeed;
       this.setVelocity(vx, vy);

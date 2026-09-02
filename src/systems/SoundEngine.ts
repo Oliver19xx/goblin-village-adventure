@@ -43,6 +43,10 @@ export class SoundEngine {
 
   constructor() {
     this.setupSilentAudio();
+    if (typeof window !== 'undefined') {
+      // Pre-initialize AudioContext and start pre-fetching audio stems immediately on page load
+      this.initContext();
+    }
   }
 
   // Layer property getters and setters with automatic smooth volume transitions
@@ -154,8 +158,9 @@ export class SoundEngine {
       this.isLoaded = true;
       this.isLoading = false;
 
-      // If playback was requested while loading, start it now
-      if (this.isPlaying && !this.isMuted) {
+      // If playback was requested or audio already unmuted, start playback now
+      if (!this.isMuted && (this.isPlaying || this.isUnlocked)) {
+        this.isPlaying = true;
         this.restartStemPlayback();
       }
     } catch (err) {
@@ -175,7 +180,7 @@ export class SoundEngine {
       this.silentAudio.play().catch(() => {});
     }
 
-    // 2. Resume & tick AudioContext
+    // 2. Resume & tick AudioContext synchronously
     if (this.ctx) {
       if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
         this.ctx.resume().catch(() => {});
