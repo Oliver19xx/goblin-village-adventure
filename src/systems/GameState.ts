@@ -10,6 +10,7 @@ export class GameState extends Phaser.Events.EventEmitter {
   public recruitedFriends: Set<string> = new Set();
   public craftedUpgrades: Set<string> = new Set();
   public collectedItemIds: Set<string> = new Set();
+  public completedQuests: Set<string> = new Set();
   public birthdayFinaleActive: boolean = false;
   public isCakeBaked: boolean = false;
   public isCakePlaced: boolean = false;
@@ -88,6 +89,20 @@ export class GameState extends Phaser.Events.EventEmitter {
       ],
       isCompleted: false,
       rewardText: 'Candy bringt die Lichterketten, Laser & die Bar zu Valentin!'
+    });
+
+    this.quests.set('quest_finale', {
+      id: 'quest_finale',
+      friendId: 'valentin',
+      title: '🎂 Das Große Geburtstags-Finale',
+      description: 'Versammle alle Freunde, backe den Geburtstagskuchen und platziere ihn auf dem Tisch in der Mitte!',
+      steps: [
+        { id: 'friends', text: 'Alle 3 Freunde (Olli, Leander, Candy) zur Party holen', isCompleted: false },
+        { id: 'bake_cake', text: 'Geburtstagskuchen an der Werkbank backen', isCompleted: false },
+        { id: 'place_cake', text: 'Kuchen auf dem Tisch in der Mitte platzieren', isCompleted: false }
+      ],
+      isCompleted: false,
+      rewardText: 'Die Party des Jahrhunderts ist eröffnet! Happy Birthday, Valentin!'
     });
   }
 
@@ -199,7 +214,14 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (friendId === 'leander') SoundEngine.getInstance().enableLead = true;
     if (friendId === 'candy') SoundEngine.getInstance().enableArp = true;
 
+    // Check Finale Quest Step 1 (All 3 friends recruited)
+    const finaleQuest = this.quests.get('quest_finale');
+    if (finaleQuest && this.recruitedFriends.size >= 3) {
+      finaleQuest.steps[0].isCompleted = true;
+    }
+
     this.emit('friend_recruited', friendId);
+    this.emit('quest_updated');
   }
 
   public isFriendRecruited(friendId: string): boolean {
@@ -238,7 +260,12 @@ export class GameState extends Phaser.Events.EventEmitter {
 
     if (recipeId === 'upgrade_cake') {
       this.isCakeBaked = true;
+      const finaleQuest = this.quests.get('quest_finale');
+      if (finaleQuest) {
+        finaleQuest.steps[1].isCompleted = true;
+      }
       this.emit('cake_baked');
+      this.emit('quest_updated');
     }
 
     this.emit('upgrade_crafted', recipe);
@@ -248,8 +275,17 @@ export class GameState extends Phaser.Events.EventEmitter {
   public placeCake(): boolean {
     if (!this.isCakeBaked || this.isCakePlaced) return false;
     this.isCakePlaced = true;
+
+    const finaleQuest = this.quests.get('quest_finale');
+    if (finaleQuest) {
+      finaleQuest.steps[2].isCompleted = true;
+      finaleQuest.isCompleted = true;
+      this.completedQuests.add('quest_finale');
+    }
+
     this.triggerBirthdayFinale();
     this.emit('cake_placed');
+    this.emit('quest_updated');
     return true;
   }
 
@@ -284,6 +320,17 @@ export class GameState extends Phaser.Events.EventEmitter {
       }
     }
 
+    // Check Finale Quest
+    const finaleQuest = this.quests.get('quest_finale');
+    if (finaleQuest) {
+      if (this.recruitedFriends.size >= 3) finaleQuest.steps[0].isCompleted = true;
+      if (this.isCakeBaked) finaleQuest.steps[1].isCompleted = true;
+      if (this.isCakePlaced) {
+        finaleQuest.steps[2].isCompleted = true;
+        finaleQuest.isCompleted = true;
+      }
+    }
+
     this.emit('quest_updated');
   }
 
@@ -315,6 +362,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.recruitedFriends.clear();
     this.craftedUpgrades.clear();
     this.collectedItemIds.clear();
+    this.completedQuests.clear();
     this.birthdayFinaleActive = false;
     this.isCakeBaked = false;
     this.isCakePlaced = false;

@@ -611,28 +611,28 @@ export class UIScene extends Phaser.Scene {
     const state = GameState.getInstance();
     const { w, h, isPortrait } = this.getViewport();
 
-    const modalW = isPortrait ? Math.min(355, w - 20) : Math.min(640, w - 24);
-    const modalH = isPortrait ? Math.min(440, h - 80) : Math.min(500, h - 30);
+    const modalW = isPortrait ? Math.min(360, w - 16) : Math.min(640, w - 24);
+    const modalH = isPortrait ? Math.min(560, h - 40) : Math.min(500, h - 30);
 
     this.questModal.setPosition(w / 2, h / 2);
 
     const bg = this.add.rectangle(0, 0, modalW, modalH, 0x100a26, 0.98)
       .setStrokeStyle(2.5, 0x00ffcc);
 
-    const title = this.add.text(0, -modalH / 2 + 24, '📜 QUESTS & FREUNDE', {
+    const title = this.add.text(0, -modalH / 2 + 22, '📜 QUESTS & FREUNDE', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: isPortrait ? '13.5px' : '16px',
+      fontSize: isPortrait ? '13px' : '15px',
       color: '#00ffcc',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const closeBtnBg = this.add.circle(modalW / 2 - 24, -modalH / 2 + 24, 13, 0x23143d, 0.95)
+    const closeBtnBg = this.add.circle(modalW / 2 - 22, -modalH / 2 + 22, 12, 0x23143d, 0.95)
       .setStrokeStyle(1.5, 0xff007f)
       .setInteractive({ useHandCursor: true });
 
-    const closeBtn = this.add.text(modalW / 2 - 24, -modalH / 2 + 24, '✖', {
+    const closeBtn = this.add.text(modalW / 2 - 22, -modalH / 2 + 22, '✖', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#ff4da6'
     }).setOrigin(0.5);
 
@@ -640,41 +640,64 @@ export class UIScene extends Phaser.Scene {
 
     this.questModal.add([bg, title, closeBtnBg, closeBtn]);
 
-    const cardW = modalW - 20;
-    const cardH = isPortrait ? 90 : 82;
-    let yOffset = -modalH / 2 + 54;
+    const cardW = modalW - 16;
+    const cardH = isPortrait ? 76 : 68;
+    let yOffset = -modalH / 2 + 46;
 
     state.quests.forEach(quest => {
-      const isRecruited = state.isFriendRecruited(quest.friendId);
-      const cardBg = this.add.rectangle(0, yOffset + cardH / 2, cardW, cardH, 0x1b1338)
-        .setStrokeStyle(1.5, isRecruited ? 0x00ff88 : 0x00e5ff);
+      const isFriendQuest = quest.friendId !== 'valentin';
+      const isRecruited = isFriendQuest ? state.isFriendRecruited(quest.friendId) : state.isCakePlaced;
+      const isCompleted = quest.isCompleted || (quest.id === 'quest_finale' ? state.isCakePlaced : isRecruited);
 
-      const titleTxt = this.add.text(-modalW / 2 + 16, yOffset + 10, quest.title, {
+      const borderColor = isCompleted ? 0x00ff88 : (quest.id === 'quest_finale' ? 0xff007f : 0x00e5ff);
+      const cardBg = this.add.rectangle(0, yOffset + cardH / 2, cardW, cardH, 0x1b1338)
+        .setStrokeStyle(1.5, borderColor);
+
+      const titleTxt = this.add.text(-modalW / 2 + 12, yOffset + 8, quest.title, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: isPortrait ? '11px' : '13px',
-        color: isRecruited ? '#00ff88' : '#ffd700',
+        fontSize: isPortrait ? '10.5px' : '12px',
+        color: isCompleted ? '#00ff88' : '#ffd700',
         fontStyle: 'bold',
         wordWrap: { width: modalW - 90 }
       });
 
       const stepsStr = quest.steps.map(s => `${s.isCompleted ? '☑' : '☐'} ${s.text}`).join('\n');
-      const stepsTxt = this.add.text(-modalW / 2 + 16, yOffset + 28, stepsStr, {
+      const stepsTxt = this.add.text(-modalW / 2 + 12, yOffset + 24, stepsStr, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '9.5px',
+        fontSize: isPortrait ? '8.5px' : '9.5px',
         color: '#ffffff',
-        wordWrap: { width: modalW - 36 },
-        lineSpacing: 3
+        wordWrap: { width: modalW - 28 },
+        lineSpacing: 2
       });
 
-      const statusBadge = this.add.text(modalW / 2 - 44, yOffset + 16, isRecruited ? '🎉 DABEI!' : '⏳ OFFEN', {
+      let badgeText = isRecruited ? '🎉 DABEI!' : '⏳ OFFEN';
+      let badgeColor = isRecruited ? '#00ff88' : '#ff9900';
+
+      if (quest.id === 'quest_finale') {
+        if (state.isCakePlaced) {
+          badgeText = '🎂 GEFEIERT!';
+          badgeColor = '#00ff88';
+        } else if (state.isCakeBaked) {
+          badgeText = '✨ PLATZIEREN';
+          badgeColor = '#ff00ea';
+        } else if (state.recruitedFriends.size >= 3) {
+          badgeText = '🔨 BACKEN';
+          badgeColor = '#ffd700';
+        } else {
+          badgeText = `⏳ FREUNDE (${state.recruitedFriends.size}/3)`;
+          badgeColor = '#00ffcc';
+        }
+      }
+
+      const statusBadge = this.add.text(modalW / 2 - 40, yOffset + 12, badgeText, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '10px',
-        color: isRecruited ? '#00ff88' : '#ff9900',
+        fontSize: isPortrait ? '8.5px' : '9.5px',
+        color: badgeColor,
         fontStyle: 'bold'
       }).setOrigin(0.5);
 
       this.questModal.add([cardBg, titleTxt, stepsTxt, statusBadge]);
-      yOffset += cardH + 8;
+      yOffset += cardH + 6;
     });
   }
 
