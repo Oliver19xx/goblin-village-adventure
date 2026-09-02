@@ -48,6 +48,8 @@ export class WorldScene extends Phaser.Scene {
     // Setup Camera and World bounds
     this.physics.world.setBounds(0, 0, 960, 640);
     this.cameras.main.setBounds(0, 0, 960, 640);
+    this.updateCameraZoom();
+    this.scale.on('resize', this.updateCameraZoom, this);
 
     this.obstacles = this.physics.add.staticGroup();
 
@@ -679,6 +681,16 @@ export class WorldScene extends Phaser.Scene {
         });
         break;
       }
+    }
+  }
+
+  private updateCameraZoom(): void {
+    const w = this.scale.width;
+    const h = this.scale.height;
+    if (w < 850 || h < 650) {
+      this.cameras.main.setZoom(1.35);
+    } else {
+      this.cameras.main.setZoom(1.0);
     }
   }
 

@@ -6,11 +6,15 @@ import { WorldScene } from './WorldScene';
 
 export class UIScene extends Phaser.Scene {
   // Top HUD
+  private topHeaderBg!: Phaser.GameObjects.Rectangle;
   private zoneText!: Phaser.GameObjects.Text;
   private progressBarFill!: Phaser.GameObjects.Rectangle;
   private progressLabel!: Phaser.GameObjects.Text;
   private inventoryContainer!: Phaser.GameObjects.Container;
   private soundBtnText!: Phaser.GameObjects.Text;
+  private questBtnContainer!: Phaser.GameObjects.Container;
+  private craftBtnContainer!: Phaser.GameObjects.Container;
+  private soundBtnContainer!: Phaser.GameObjects.Container;
 
   // Modals & Panels
   private dialogueBox!: Phaser.GameObjects.Container;
@@ -28,8 +32,12 @@ export class UIScene extends Phaser.Scene {
   private toastText!: Phaser.GameObjects.Text;
   private toastTimer?: Phaser.Time.TimerEvent;
 
-  // Mobile Virtual Joystick
-  private touchKnob?: Phaser.GameObjects.Image;
+  // Mobile Virtual Joystick & Buttons
+  private joystickBase!: Phaser.GameObjects.Image;
+  private touchKnob!: Phaser.GameObjects.Image;
+  private btnE!: Phaser.GameObjects.Container;
+  private btnC!: Phaser.GameObjects.Container;
+  private btnQ!: Phaser.GameObjects.Container;
   private isTouchingStick: boolean = false;
   private touchStartPos: { x: number; y: number } = { x: 0, y: 0 };
 
@@ -47,6 +55,9 @@ export class UIScene extends Phaser.Scene {
     this.setupFinaleModal();
     this.setupToast();
     this.setupMobileControls();
+
+    // Responsive window resize listener
+    this.scale.on('resize', this.handleResize, this);
 
     // Listen to GameState events
     state.on('inventory_changed', () => this.updateHUD());
@@ -85,17 +96,16 @@ export class UIScene extends Phaser.Scene {
     this.updateHUD();
   }
 
-  // --- 1. ACCESSIBLE TOP BAR HUD ---
+  // --- 1. ACCESSIBLE & RESPONSIVE TOP BAR HUD ---
   private setupTopHUD(): void {
-    const w = this.cameras.main.width;
+    const w = this.scale.width;
 
-    // Header Background Pill with gradient-like styling & strong contrast
-    this.add.rectangle(w / 2, 26, w - 16, 44, 0x0a0614, 0.92)
+    this.topHeaderBg = this.add.rectangle(w / 2, 28, w - 16, 48, 0x0a0614, 0.94)
       .setStrokeStyle(2, 0x4d396d)
       .setDepth(100);
 
-    // Zone Badge (Large & readable)
-    this.zoneText = this.add.text(24, 26, '🧌 BAUWAGENPLATZ', {
+    // Zone Badge
+    this.zoneText = this.add.text(24, 28, '🧌 BAUWAGENPLATZ', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '15px',
       color: '#00ffcc',
@@ -103,9 +113,9 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(0, 0.5).setDepth(101);
 
     // Party Progress Bar
-    const barX = 280;
-    const barY = 26;
-    const barW = 150;
+    const barX = Math.min(290, w * 0.32);
+    const barY = 28;
+    const barW = 140;
     const barH = 18;
 
     this.add.rectangle(barX, barY, barW, barH, 0x1f1730)
@@ -116,7 +126,7 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setDepth(102);
 
-    this.progressLabel = this.add.text(barX + barW / 2 + 10, barY, 'Party: 0%', {
+    this.progressLabel = this.add.text(barX + barW / 2 + 8, barY, '0%', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '14px',
       color: '#ff99dd',
@@ -124,52 +134,58 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(0, 0.5).setDepth(101);
 
     // Quick Inventory Slot preview
-    this.inventoryContainer = this.add.container(515, 26).setDepth(101);
+    this.inventoryContainer = this.add.container(Math.min(500, w * 0.55), 28).setDepth(101);
 
-    // Top action buttons (Quests, Crafting, Sound) with comfortable touch targets (40px high)
-    this.createHeaderButton(w - 245, 26, '📜 Quests (Q)', 105, () => this.toggleQuestModal());
-    this.createHeaderButton(w - 130, 26, '🔨 Bauen (C)', 105, () => this.toggleCraftingModal());
+    // Top action buttons (Quests, Crafting, Sound)
+    this.questBtnContainer = this.createHeaderButton(w - 240, 28, '📜 Quests (Q)', 100, () => this.toggleQuestModal());
+    this.craftBtnContainer = this.createHeaderButton(w - 130, 28, '🔨 Bauen (C)', 100, () => this.toggleCraftingModal());
     
-    // Sound Button
-    const sndBg = this.add.circle(w - 40, 26, 18, 0x221a36, 0.9)
-      .setStrokeStyle(1.5, 0x00ffcc)
-      .setDepth(101)
-      .setInteractive({ useHandCursor: true });
+    // Unified Sound Toggle Button Container
+    this.soundBtnContainer = this.add.container(w - 38, 28).setDepth(102);
+    const sndBg = this.add.circle(0, 0, 20, 0x221a36, 0.95)
+      .setStrokeStyle(2, 0x00ffcc);
 
-    this.soundBtnText = this.add.text(w - 40, 26, '🔊', {
+    this.soundBtnText = this.add.text(0, 0, SoundEngine.getInstance().getMuted() ? '🔇' : '🔊', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '18px',
       color: '#ffffff'
-    }).setOrigin(0.5).setDepth(102);
+    }).setOrigin(0.5);
 
-    sndBg.on('pointerdown', () => this.toggleSound());
+    this.soundBtnContainer.add([sndBg, this.soundBtnText]);
+    this.soundBtnContainer.setSize(44, 44);
+    this.soundBtnContainer.setInteractive({ useHandCursor: true });
+    this.soundBtnContainer.on('pointerdown', () => this.toggleSound());
   }
 
-  private createHeaderButton(x: number, y: number, text: string, width: number, onClick: () => void): void {
-    const bg = this.add.rectangle(x, y, width, 32, 0x261a40)
-      .setStrokeStyle(1.5, 0x8a45d0)
-      .setDepth(101)
-      .setInteractive({ useHandCursor: true });
+  private createHeaderButton(x: number, y: number, text: string, width: number, onClick: () => void): Phaser.GameObjects.Container {
+    const container = this.add.container(x, y).setDepth(102);
+    const bg = this.add.rectangle(0, 0, width, 34, 0x261a40)
+      .setStrokeStyle(1.5, 0x8a45d0);
 
-    this.add.text(x, y, text, {
+    const lbl = this.add.text(0, 0, text, {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '13px',
       color: '#ffffff',
       fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(102);
+    }).setOrigin(0.5);
 
-    bg.on('pointerdown', () => {
+    container.add([bg, lbl]);
+    container.setSize(width, 34);
+    container.setInteractive({ useHandCursor: true });
+
+    container.on('pointerdown', () => {
       SoundEngine.getInstance().playPickup();
       onClick();
     });
-    bg.on('pointerover', () => bg.setFillStyle(0x3e2868));
-    bg.on('pointerout', () => bg.setFillStyle(0x261a40));
+    container.on('pointerover', () => bg.setFillStyle(0x3e2868));
+    container.on('pointerout', () => bg.setFillStyle(0x261a40));
+
+    return container;
   }
 
   private updateHUD(): void {
     const state = GameState.getInstance();
 
-    // Update Zone Text
     const zoneNames: { [k: string]: string } = {
       hub: '🧌 Valentins Party-Hub',
       kanal: '🎧 Kanal-Rave (Olli)',
@@ -178,11 +194,10 @@ export class UIScene extends Phaser.Scene {
     };
     this.zoneText.setText(zoneNames[state.currentZone] || 'Unbekannt');
 
-    // Update Progress Bar
     const progress = state.getPartyProgress();
-    const barW = 150;
+    const barW = 140;
     this.progressBarFill.width = Math.max(2, (barW - 2) * (progress / 100));
-    this.progressLabel.setText(`Party: ${progress}%`);
+    this.progressLabel.setText(`${progress}%`);
 
     // Update Quick Inventory Icons
     this.inventoryContainer.removeAll(true);
@@ -192,56 +207,56 @@ export class UIScene extends Phaser.Scene {
     trackedItems.forEach(itemId => {
       const item = state.inventory.get(itemId);
       if (item) {
-        // Pill background
-        const pill = this.add.rectangle(offsetX + 18, 0, 52, 24, 0x18112b, 0.8)
+        const pill = this.add.rectangle(offsetX + 18, 0, 50, 24, 0x18112b, 0.85)
           .setStrokeStyle(1, 0x5a4878);
 
-        const icon = this.add.image(offsetX + 2, 0, item.iconTexture).setScale(0.85);
-        const countTxt = this.add.text(offsetX + 22, 0, `${item.count}`, {
+        const icon = this.add.image(offsetX + 2, 0, item.iconTexture).setScale(0.8);
+        const countTxt = this.add.text(offsetX + 20, 0, `${item.count}`, {
           fontFamily: 'Outfit, sans-serif',
-          fontSize: '14px',
+          fontSize: '13px',
           color: '#ffd700',
           fontStyle: 'bold'
         }).setOrigin(0, 0.5);
 
         this.inventoryContainer.add([pill, icon, countTxt]);
-        offsetX += 62;
+        offsetX += 58;
       }
     });
   }
 
   private toggleSound(): void {
-    const isMuted = SoundEngine.getInstance().toggleMute();
+    const sound = SoundEngine.getInstance();
+    const isMuted = sound.toggleMute();
     this.soundBtnText.setText(isMuted ? '🔇' : '🔊');
-    this.showToast(isMuted ? 'Ton stummgeschaltet' : 'Ton aktiviert');
+    this.showToast(isMuted ? '🔇 Ton stummgeschaltet' : '🔊 Ton aktiviert (Party-Beats an!)');
   }
 
-  // --- 2. ACCESSIBLE DIALOGUE SYSTEM (Large Fonts & Buttons) ---
+  // --- 2. ACCESSIBLE DIALOGUE SYSTEM ---
   private setupDialogueBox(): void {
-    const w = this.cameras.main.width;
-    const h = this.cameras.main.height;
+    const w = this.scale.width;
+    const h = this.scale.height;
 
-    this.dialogueBox = this.add.container(w / 2, h - 105).setDepth(200).setVisible(false);
+    this.dialogueBox = this.add.container(w / 2, h - 110).setDepth(200).setVisible(false);
 
-    // Large high-contrast dialogue box
-    const bg = this.add.rectangle(0, 0, w - 40, 165, 0x0c0818, 0.98)
+    const boxW = Math.min(900, w - 24);
+    const bg = this.add.rectangle(0, 0, boxW, 165, 0x0c0818, 0.98)
       .setStrokeStyle(2.5, 0xff007f);
 
-    this.dialoguePortrait = this.add.sprite(-w / 2 + 80, -10, 'valentin_idle')
+    this.dialoguePortrait = this.add.sprite(-boxW / 2 + 65, -10, 'valentin_idle')
       .setScale(2.6);
 
-    this.dialogueName = this.add.text(-w / 2 + 150, -62, 'Speaker Name', {
+    this.dialogueName = this.add.text(-boxW / 2 + 130, -62, 'Speaker Name', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '16px',
       color: '#00ffcc',
       fontStyle: 'bold'
     });
 
-    this.dialogueText = this.add.text(-w / 2 + 150, -36, '', {
+    this.dialogueText = this.add.text(-boxW / 2 + 130, -36, '', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '15px',
       color: '#ffffff',
-      wordWrap: { width: w - 240 },
+      wordWrap: { width: boxW - 160 },
       lineSpacing: 5
     });
 
@@ -259,14 +274,15 @@ export class UIScene extends Phaser.Scene {
     this.dialogueName.setText(node.speakerName);
     this.dialogueText.setText(node.text);
 
-    // Setup Option buttons (Large touch targets: minimum 36px height)
     this.dialogueOptionsContainer.removeAll(true);
 
     if (node.options && node.options.length > 0) {
-      let optX = -this.cameras.main.width / 2 + 150;
+      const boxW = Math.min(900, this.scale.width - 24);
+      let optX = -boxW / 2 + 130;
+
       node.options.forEach(opt => {
-        const btnWidth = Math.min(260, Math.max(180, opt.label.length * 8 + 30));
-        const btnBg = this.add.rectangle(optX + btnWidth / 2, 0, btnWidth, 36, 0x251442)
+        const btnWidth = Math.min(280, Math.max(170, opt.label.length * 8 + 30));
+        const btnBg = this.add.rectangle(optX + btnWidth / 2, 0, btnWidth, 38, 0x251442)
           .setStrokeStyle(2, 0x00ffcc)
           .setInteractive({ useHandCursor: true });
 
@@ -275,7 +291,7 @@ export class UIScene extends Phaser.Scene {
           fontSize: '13px',
           color: '#ffffff',
           fontStyle: 'bold',
-          wordWrap: { width: btnWidth - 16 },
+          wordWrap: { width: btnWidth - 14 },
           align: 'center'
         }).setOrigin(0.5);
 
@@ -292,7 +308,7 @@ export class UIScene extends Phaser.Scene {
         });
 
         this.dialogueOptionsContainer.add([btnBg, btnText]);
-        optX += btnWidth + 16;
+        optX += btnWidth + 14;
       });
     } else {
       this.dialogueBox.setInteractive(new Phaser.Geom.Rectangle(-450, -80, 900, 160), Phaser.Geom.Rectangle.Contains);
@@ -323,26 +339,29 @@ export class UIScene extends Phaser.Scene {
 
   // --- 3. ACCESSIBLE CRAFTING MODAL ---
   private setupCraftingModal(): void {
-    const w = this.cameras.main.width;
-    const h = this.cameras.main.height;
+    const w = this.scale.width;
+    const h = this.scale.height;
 
     this.craftingModal = this.add.container(w / 2, h / 2).setDepth(210).setVisible(false);
 
-    const bg = this.add.rectangle(0, 0, 740, 500, 0x0f0b1e, 0.98)
+    const modalW = Math.min(760, w - 24);
+    const modalH = Math.min(520, h - 30);
+
+    const bg = this.add.rectangle(0, 0, modalW, modalH, 0x0f0b1e, 0.98)
       .setStrokeStyle(2.5, 0xffd700);
 
-    const title = this.add.text(0, -220, '🔨 WERKBANK: PARTY-AUSBAU', {
+    const title = this.add.text(0, -modalH / 2 + 28, '🔨 WERKBANK: PARTY-AUSBAU', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '20px',
       color: '#ffd700',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const closeBtnBg = this.add.circle(340, -220, 18, 0x2b153b, 0.9)
+    const closeBtnBg = this.add.circle(modalW / 2 - 28, -modalH / 2 + 28, 20, 0x2b153b, 0.95)
       .setStrokeStyle(1.5, 0xff007f)
       .setInteractive({ useHandCursor: true });
 
-    const closeBtn = this.add.text(340, -220, '✖', {
+    const closeBtn = this.add.text(modalW / 2 - 28, -modalH / 2 + 28, '✖', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '18px',
       color: '#ff4da6'
@@ -374,21 +393,23 @@ export class UIScene extends Phaser.Scene {
       this.craftingModal.removeAt(4, true);
     }
 
-    let yOffset = -155;
+    const modalW = Math.min(760, this.scale.width - 24);
+    let yOffset = -160;
+
     state.craftingRecipes.forEach(recipe => {
-      const cardBg = this.add.rectangle(0, yOffset + 28, 680, 62, 0x1a1236)
+      const cardBg = this.add.rectangle(0, yOffset + 30, modalW - 40, 64, 0x1a1236)
         .setStrokeStyle(1.5, recipe.built ? 0x00ff88 : 0x5a4878);
 
-      const icon = this.add.image(-305, yOffset + 28, recipe.icon).setScale(1.0);
+      const icon = this.add.image(-modalW / 2 + 48, yOffset + 30, recipe.icon).setScale(1.0);
 
-      const nameTxt = this.add.text(-265, yOffset + 12, recipe.name, {
+      const nameTxt = this.add.text(-modalW / 2 + 84, yOffset + 14, recipe.name, {
         fontFamily: 'Outfit, sans-serif',
         fontSize: '15px',
         color: recipe.built ? '#00ff88' : '#ffffff',
         fontStyle: 'bold'
       });
 
-      const descTxt = this.add.text(-265, yOffset + 32, recipe.description, {
+      const descTxt = this.add.text(-modalW / 2 + 84, yOffset + 34, recipe.description, {
         fontFamily: 'Outfit, sans-serif',
         fontSize: '12px',
         color: '#bbbbbb'
@@ -399,22 +420,21 @@ export class UIScene extends Phaser.Scene {
         const cur = state.getItemCount(c.itemId);
         const name = state.inventory.get(c.itemId)?.name || c.itemId;
         return `${name}: ${cur}/${c.amount}`;
-      }).join('  |  ');
+      }).join(' | ');
 
       if (recipe.requiredFriendId && !state.isFriendRecruited(recipe.requiredFriendId)) {
-        costStr = `🔒 Benötigt Freund: ${recipe.requiredFriendId.toUpperCase()}`;
+        costStr = `🔒 Benötigt: ${recipe.requiredFriendId.toUpperCase()}`;
       }
 
-      const costTxt = this.add.text(140, yOffset + 28, costStr, {
+      const costTxt = this.add.text(modalW / 2 - 190, yOffset + 30, costStr, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '13px',
+        fontSize: '12px',
         color: '#ffbb44',
         fontStyle: 'bold'
       }).setOrigin(0.5);
 
-      // Build Action Button or Built Checkmark
       if (recipe.built) {
-        const builtBadge = this.add.text(285, yOffset + 28, '✓ GEBAUT', {
+        const builtBadge = this.add.text(modalW / 2 - 75, yOffset + 30, '✓ GEBAUT', {
           fontFamily: 'Outfit, sans-serif',
           fontSize: '14px',
           color: '#00ff88',
@@ -425,11 +445,11 @@ export class UIScene extends Phaser.Scene {
         const canBuild = (!recipe.requiredFriendId || state.isFriendRecruited(recipe.requiredFriendId)) &&
           recipe.costs.every(c => state.getItemCount(c.itemId) >= c.amount);
 
-        const btnBg = this.add.rectangle(285, yOffset + 28, 95, 36, canBuild ? 0xff007f : 0x2d2242)
+        const btnBg = this.add.rectangle(modalW / 2 - 75, yOffset + 30, 95, 36, canBuild ? 0xff007f : 0x2d2242)
           .setStrokeStyle(1.5, canBuild ? 0xff66cc : 0x555555)
           .setInteractive({ useHandCursor: canBuild });
 
-        const btnTxt = this.add.text(285, yOffset + 28, 'BAUEN', {
+        const btnTxt = this.add.text(modalW / 2 - 75, yOffset + 30, 'BAUEN', {
           fontFamily: 'Outfit, sans-serif',
           fontSize: '14px',
           color: canBuild ? '#ffffff' : '#777777',
@@ -453,26 +473,29 @@ export class UIScene extends Phaser.Scene {
 
   // --- 4. ACCESSIBLE QUEST LOG MODAL ---
   private setupQuestModal(): void {
-    const w = this.cameras.main.width;
-    const h = this.cameras.main.height;
+    const w = this.scale.width;
+    const h = this.scale.height;
 
     this.questModal = this.add.container(w / 2, h / 2).setDepth(210).setVisible(false);
 
-    const bg = this.add.rectangle(0, 0, 720, 460, 0x100a26, 0.98)
+    const modalW = Math.min(740, w - 24);
+    const modalH = Math.min(500, h - 30);
+
+    const bg = this.add.rectangle(0, 0, modalW, modalH, 0x100a26, 0.98)
       .setStrokeStyle(2.5, 0x00ffcc);
 
-    const title = this.add.text(0, -200, '📜 GEBURTSTAGS-TAGEBUCH & QUESTS', {
+    const title = this.add.text(0, -modalH / 2 + 28, '📜 GEBURTSTAGS-TAGEBUCH & QUESTS', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '19px',
       color: '#00ffcc',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const closeBtnBg = this.add.circle(330, -200, 18, 0x23143d, 0.9)
+    const closeBtnBg = this.add.circle(modalW / 2 - 28, -modalH / 2 + 28, 20, 0x23143d, 0.95)
       .setStrokeStyle(1.5, 0xff007f)
       .setInteractive({ useHandCursor: true });
 
-    const closeBtn = this.add.text(330, -200, '✖', {
+    const closeBtn = this.add.text(modalW / 2 - 28, -modalH / 2 + 28, '✖', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '18px',
       color: '#ff4da6'
@@ -500,13 +523,15 @@ export class UIScene extends Phaser.Scene {
       this.questModal.removeAt(4, true);
     }
 
+    const modalW = Math.min(740, this.scale.width - 24);
     let yOffset = -140;
+
     state.quests.forEach(quest => {
       const isRecruited = state.isFriendRecruited(quest.friendId);
-      const cardBg = this.add.rectangle(0, yOffset + 38, 660, 84, 0x1b1338)
+      const cardBg = this.add.rectangle(0, yOffset + 40, modalW - 40, 86, 0x1b1338)
         .setStrokeStyle(1.5, isRecruited ? 0x00ff88 : 0x00e5ff);
 
-      const titleTxt = this.add.text(-310, yOffset + 10, quest.title, {
+      const titleTxt = this.add.text(-modalW / 2 + 35, yOffset + 12, quest.title, {
         fontFamily: 'Outfit, sans-serif',
         fontSize: '15px',
         color: isRecruited ? '#00ff88' : '#ffd700',
@@ -514,14 +539,14 @@ export class UIScene extends Phaser.Scene {
       });
 
       const stepsStr = quest.steps.map(s => `${s.isCompleted ? '☑' : '☐'} ${s.text}`).join('\n');
-      const stepsTxt = this.add.text(-310, yOffset + 30, stepsStr, {
+      const stepsTxt = this.add.text(-modalW / 2 + 35, yOffset + 32, stepsStr, {
         fontFamily: 'Outfit, sans-serif',
         fontSize: '13px',
         color: '#ffffff',
         lineSpacing: 4
       });
 
-      const statusBadge = this.add.text(280, yOffset + 38, isRecruited ? '🎉 DABEI!' : '⏳ OFFEN', {
+      const statusBadge = this.add.text(modalW / 2 - 75, yOffset + 40, isRecruited ? '🎉 DABEI!' : '⏳ OFFEN', {
         fontFamily: 'Outfit, sans-serif',
         fontSize: '14px',
         color: isRecruited ? '#00ff88' : '#ff9900',
@@ -529,48 +554,50 @@ export class UIScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       this.questModal.add([cardBg, titleTxt, stepsTxt, statusBadge]);
-      yOffset += 96;
+      yOffset += 98;
     });
   }
 
   // --- 5. FINALE MODAL ---
   private setupFinaleModal(): void {
-    const w = this.cameras.main.width;
-    const h = this.cameras.main.height;
+    const w = this.scale.width;
+    const h = this.scale.height;
 
     this.finaleModal = this.add.container(w / 2, h / 2).setDepth(300).setVisible(false);
 
-    const bg = this.add.rectangle(0, 0, 740, 500, 0x140624, 0.98)
+    const modalW = Math.min(740, w - 24);
+    const modalH = Math.min(500, h - 30);
+
+    const bg = this.add.rectangle(0, 0, modalW, modalH, 0x140624, 0.98)
       .setStrokeStyle(3.5, 0xff00ea);
 
-    const title = this.add.text(0, -190, '🎂 HAPPY BIRTHDAY, VALENTIN! 🎂', {
+    const title = this.add.text(0, -modalH / 2 + 40, '🎂 HAPPY BIRTHDAY, VALENTIN! 🎂', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '24px',
+      fontSize: '23px',
       color: '#ffd700',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    // Avatars of Valentin, Olli, Leander, Candy dancing
-    const vSprite = this.add.sprite(-160, -70, 'valentin_dance').setScale(2.8);
-    const oSprite = this.add.sprite(-50, -70, 'olli_dance').setScale(2.8);
-    const lSprite = this.add.sprite(50, -70, 'leander_dance').setScale(2.8);
-    const cSprite = this.add.sprite(160, -70, 'candy_dance').setScale(2.8);
+    const vSprite = this.add.sprite(-150, -60, 'valentin_dance').setScale(2.6);
+    const oSprite = this.add.sprite(-50, -60, 'olli_dance').setScale(2.6);
+    const lSprite = this.add.sprite(50, -60, 'leander_dance').setScale(2.6);
+    const cSprite = this.add.sprite(150, -60, 'candy_dance').setScale(2.6);
 
-    const cakeImg = this.add.image(0, 35, 'prop_birthday_cake').setScale(2.2);
+    const cakeImg = this.add.image(0, 40, 'prop_birthday_cake').setScale(2.0);
 
     const msg = this.add.text(0, 115, 'Du hast alle deine Freunde gefunden, den Bauwagenplatz ausgebaut\nund die legendärste Goblin-Rave-Party aller Zeiten gestartet!', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '16px',
+      fontSize: '15px',
       color: '#ffffff',
       align: 'center',
       lineSpacing: 5
     }).setOrigin(0.5);
 
-    const continueBtnBg = this.add.rectangle(0, 190, 240, 44, 0xff007f)
+    const continueBtnBg = this.add.rectangle(0, 185, 230, 44, 0xff007f)
       .setStrokeStyle(2, 0xffffff)
       .setInteractive({ useHandCursor: true });
 
-    const continueBtnTxt = this.add.text(0, 190, 'WEITER FEIERN! 🪩', {
+    const continueBtnTxt = this.add.text(0, 185, 'WEITER FEIERN! 🪩', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '15px',
       color: '#ffffff',
@@ -592,7 +619,7 @@ export class UIScene extends Phaser.Scene {
 
   // --- TOAST NOTIFICATIONS ---
   private setupToast(): void {
-    const w = this.cameras.main.width;
+    const w = this.scale.width;
     this.toastContainer = this.add.container(w / 2, 75).setDepth(250).setVisible(false);
 
     const bg = this.add.rectangle(0, 0, 400, 36, 0x1f1438, 0.95)
@@ -620,14 +647,13 @@ export class UIScene extends Phaser.Scene {
 
   // --- 6. ERGONOMIC MOBILE TOUCH JOYSTICK & BUTTONS ---
   private setupMobileControls(): void {
-    const h = this.cameras.main.height;
-    const w = this.cameras.main.width;
+    const h = this.scale.height;
+    const w = this.scale.width;
 
-    // Virtual Joystick on bottom-left (Safe-area margin)
-    const stickX = 95;
-    const stickY = h - 95;
+    const stickX = 90;
+    const stickY = h - 90;
 
-    this.add.image(stickX, stickY, 'ui_stick_base')
+    this.joystickBase = this.add.image(stickX, stickY, 'ui_stick_base')
       .setDepth(150)
       .setAlpha(0.65)
       .setInteractive();
@@ -637,9 +663,9 @@ export class UIScene extends Phaser.Scene {
       .setAlpha(0.9);
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.x < 240 && pointer.y > h - 220) {
+      if (pointer.x < 240 && pointer.y > this.scale.height - 220) {
         this.isTouchingStick = true;
-        this.touchStartPos = { x: stickX, y: stickY };
+        this.touchStartPos = { x: this.joystickBase.x, y: this.joystickBase.y };
         this.updateJoystick(pointer);
       }
     });
@@ -653,7 +679,7 @@ export class UIScene extends Phaser.Scene {
     this.input.on('pointerup', () => {
       this.isTouchingStick = false;
       if (this.touchKnob) {
-        this.touchKnob.setPosition(stickX, stickY);
+        this.touchKnob.setPosition(this.joystickBase.x, this.joystickBase.y);
       }
       const worldScene = this.scene.get('WorldScene') as WorldScene;
       if (worldScene && worldScene.player) {
@@ -661,20 +687,17 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    // Mobile Action Buttons on bottom-right (32px radius = 64px touch target)
-    // E (Action)
-    this.createMobileActionBtn(w - 75, h - 85, 'E', 'Aktion', 0xff007f, () => {
+    // Mobile Action Buttons with safe-area spacing
+    this.btnE = this.createMobileActionBtn(w - 75, h - 80, 'E', 'Aktion', 0xff007f, () => {
       const worldScene = this.scene.get('WorldScene') as WorldScene;
       if (worldScene) worldScene.handleInteraction();
     });
 
-    // C (Craft)
-    this.createMobileActionBtn(w - 165, h - 65, 'C', 'Bauen', 0x9900ff, () => {
+    this.btnC = this.createMobileActionBtn(w - 165, h - 65, 'C', 'Bauen', 0x9900ff, () => {
       this.toggleCraftingModal();
     });
 
-    // Q (Quests)
-    this.createMobileActionBtn(w - 165, h - 145, 'Q', 'Quests', 0x00b4d8, () => {
+    this.btnQ = this.createMobileActionBtn(w - 165, h - 145, 'Q', 'Quests', 0x00b4d8, () => {
       this.toggleQuestModal();
     });
   }
@@ -704,31 +727,68 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  private createMobileActionBtn(x: number, y: number, key: string, label: string, color: number, action: () => void): void {
-    const bg = this.add.circle(x, y, 32, color, 0.85)
-      .setStrokeStyle(2.5, 0xffffff)
-      .setDepth(150)
-      .setInteractive({ useHandCursor: true });
+  private createMobileActionBtn(x: number, y: number, key: string, label: string, color: number, action: () => void): Phaser.GameObjects.Container {
+    const container = this.add.container(x, y).setDepth(150);
+    const bg = this.add.circle(0, 0, 32, color, 0.88)
+      .setStrokeStyle(2.5, 0xffffff);
 
-    this.add.text(x, y - 4, key, {
+    const keyTxt = this.add.text(0, -4, key, {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '20px',
       color: '#ffffff',
       fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(151);
+    }).setOrigin(0.5);
 
-    this.add.text(x, y + 14, label, {
+    const lblTxt = this.add.text(0, 14, label, {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '9px',
       color: '#ffffff',
       fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(151);
+    }).setOrigin(0.5);
 
-    bg.on('pointerdown', () => {
-      bg.setScale(0.92);
+    container.add([bg, keyTxt, lblTxt]);
+    container.setSize(64, 64);
+    container.setInteractive({ useHandCursor: true });
+
+    container.on('pointerdown', () => {
+      container.setScale(0.92);
       action();
     });
-    bg.on('pointerup', () => bg.setScale(1));
-    bg.on('pointerout', () => bg.setScale(1));
+    container.on('pointerup', () => container.setScale(1));
+    container.on('pointerout', () => container.setScale(1));
+
+    return container;
+  }
+
+  private handleResize(): void {
+    const w = this.scale.width;
+    const h = this.scale.height;
+
+    if (this.topHeaderBg) {
+      this.topHeaderBg.setPosition(w / 2, 28).setSize(w - 16, 48);
+    }
+    if (this.soundBtnContainer) {
+      this.soundBtnContainer.setPosition(w - 38, 28);
+    }
+    if (this.craftBtnContainer) {
+      this.craftBtnContainer.setPosition(w - 130, 28);
+    }
+    if (this.questBtnContainer) {
+      this.questBtnContainer.setPosition(w - 240, 28);
+    }
+
+    if (this.joystickBase) {
+      this.joystickBase.setPosition(90, h - 90);
+      if (this.touchKnob) this.touchKnob.setPosition(90, h - 90);
+    }
+    if (this.btnE) this.btnE.setPosition(w - 75, h - 80);
+    if (this.btnC) this.btnC.setPosition(w - 165, h - 65);
+    if (this.btnQ) this.btnQ.setPosition(w - 165, h - 145);
+
+    if (this.dialogueBox) this.dialogueBox.setPosition(w / 2, h - 110);
+    if (this.craftingModal) this.craftingModal.setPosition(w / 2, h / 2);
+    if (this.questModal) this.questModal.setPosition(w / 2, h / 2);
+    if (this.finaleModal) this.finaleModal.setPosition(w / 2, h / 2);
+    if (this.toastContainer) this.toastContainer.setPosition(w / 2, 75);
   }
 }

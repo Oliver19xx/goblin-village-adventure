@@ -1,6 +1,7 @@
 /**
  * Web Audio API procedural synthesizer for multi-track chiptune & techno beats.
  * Features dynamic layer toggling as Valentin recruits friends and upgrades the party.
+ * Includes mobile audio context unlocking (iOS / Android touch resume).
  */
 export class SoundEngine {
   private static instance: SoundEngine;
@@ -25,13 +26,39 @@ export class SoundEngine {
     return SoundEngine.instance;
   }
 
-  private initContext(): void {
+  public initContext(): void {
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioCtx();
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+      }
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
+      this.ctx.resume().catch(() => {});
+    }
+  }
+
+  /**
+   * Unlocks iOS & Android Web Audio by playing a 1-sample silent buffer on direct touch.
+   */
+  public unlockAudio(): void {
+    this.initContext();
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
+        this.ctx.resume().catch(() => {});
+      }
+      try {
+        const buffer = this.ctx.createBuffer(1, 1, 22050);
+        const source = this.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.ctx.destination);
+        source.start(0);
+      } catch {
+        // ignore
+      }
+    }
+    if (!this.isMuted) {
+      this.startMusic();
     }
   }
 
@@ -60,10 +87,20 @@ export class SoundEngine {
 
   public toggleMute(): boolean {
     this.isMuted = !this.isMuted;
-    if (!this.isMuted && !this.isPlaying) {
-      this.startMusic();
+    if (!this.isMuted) {
+      this.unlockAudio();
+      if (!this.isPlaying) {
+        this.startMusic();
+      }
     }
     return this.isMuted;
+  }
+
+  public setMuted(muted: boolean): void {
+    this.isMuted = muted;
+    if (!this.isMuted) {
+      this.unlockAudio();
+    }
   }
 
   public getMuted(): boolean {
@@ -71,7 +108,7 @@ export class SoundEngine {
   }
 
   private stepMusic(): void {
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running') return;
     const now = this.ctx.currentTime;
 
     // 1. Drums (Base layer)
@@ -93,7 +130,7 @@ export class SoundEngine {
       const bassNotes = [110, 110, 130.81, 110, 98, 98, 110, 146.83, 110, 110, 130.81, 110, 92.5, 92.5, 98, 110];
       const freq = bassNotes[this.currentStep];
       if (this.currentStep % 2 === 0 || this.enableFinale) {
-        this.playSynthNote(now, freq, 0.12, 'sawtooth', 0.12);
+        this.playSynthNote(now, freq, 0.12, 'sawtooth', 0.14);
       }
     }
 
@@ -102,7 +139,7 @@ export class SoundEngine {
       const leadNotes = [440, 0, 523.25, 0, 659.25, 587.33, 0, 523.25, 440, 0, 659.25, 0, 783.99, 659.25, 587.33, 523.25];
       const freq = leadNotes[this.currentStep];
       if (freq > 0) {
-        this.playSynthNote(now, freq, 0.15, 'square', 0.08);
+        this.playSynthNote(now, freq, 0.15, 'square', 0.09);
       }
     }
 
@@ -110,14 +147,14 @@ export class SoundEngine {
     if (this.enableArp || this.enableFinale) {
       const arpNotes = [523.25, 659.25, 783.99, 1046.5, 659.25, 783.99, 1046.5, 1318.51];
       const freq = arpNotes[this.currentStep % arpNotes.length];
-      this.playSynthNote(now, freq, 0.08, 'triangle', 0.09);
+      this.playSynthNote(now, freq, 0.08, 'triangle', 0.10);
     }
 
     // 5. Birthday Finale Rave Chords
     if (this.enableFinale && this.currentStep % 4 === 0) {
-      this.playSynthNote(now, 261.63 * 2, 0.35, 'sawtooth', 0.06);
-      this.playSynthNote(now, 329.63 * 2, 0.35, 'sawtooth', 0.06);
-      this.playSynthNote(now, 392.00 * 2, 0.35, 'sawtooth', 0.06);
+      this.playSynthNote(now, 261.63 * 2, 0.35, 'sawtooth', 0.07);
+      this.playSynthNote(now, 329.63 * 2, 0.35, 'sawtooth', 0.07);
+      this.playSynthNote(now, 392.00 * 2, 0.35, 'sawtooth', 0.07);
     }
   }
 
@@ -128,7 +165,7 @@ export class SoundEngine {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(140, t);
     osc.frequency.exponentialRampToValueAtTime(32, t + 0.12);
-    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.setValueAtTime(0.28, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
     osc.connect(gain);
     gain.connect(this.ctx.destination);
@@ -138,7 +175,6 @@ export class SoundEngine {
 
   private playSnare(t: number): void {
     if (!this.ctx) return;
-    // Noise buffer
     const bufferSize = this.ctx.sampleRate * 0.1;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -148,7 +184,7 @@ export class SoundEngine {
     const noise = this.ctx.createBufferSource();
     noise.buffer = buffer;
     const gain = this.ctx.createGain();
-    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.setValueAtTime(0.14, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
     noise.connect(gain);
     gain.connect(this.ctx.destination);
@@ -187,35 +223,35 @@ export class SoundEngine {
 
   public playPickup(): void {
     if (this.isMuted) return;
-    this.initContext();
+    this.unlockAudio();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this.playSynthNote(t, 587.33, 0.08, 'sine', 0.15);
-    this.playSynthNote(t + 0.07, 880.00, 0.12, 'sine', 0.15);
+    this.playSynthNote(t, 587.33, 0.08, 'sine', 0.18);
+    this.playSynthNote(t + 0.07, 880.00, 0.12, 'sine', 0.18);
   }
 
   public playTalk(): void {
     if (this.isMuted) return;
-    this.initContext();
+    this.unlockAudio();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    const pitch = 300 + Math.random() * 250;
-    this.playSynthNote(t, pitch, 0.05, 'triangle', 0.08);
+    const pitch = 320 + Math.random() * 260;
+    this.playSynthNote(t, pitch, 0.06, 'triangle', 0.12);
   }
 
   public playCraft(): void {
     if (this.isMuted) return;
-    this.initContext();
+    this.unlockAudio();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this.playSynthNote(t, 330, 0.08, 'square', 0.12);
-    this.playSynthNote(t + 0.09, 440, 0.08, 'square', 0.12);
-    this.playSynthNote(t + 0.18, 660, 0.2, 'sawtooth', 0.15);
+    this.playSynthNote(t, 330, 0.08, 'square', 0.14);
+    this.playSynthNote(t + 0.09, 440, 0.08, 'square', 0.14);
+    this.playSynthNote(t + 0.18, 660, 0.2, 'sawtooth', 0.18);
   }
 
   public playWarp(): void {
     if (this.isMuted) return;
-    this.initContext();
+    this.unlockAudio();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
@@ -223,7 +259,7 @@ export class SoundEngine {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(200, t);
     osc.frequency.exponentialRampToValueAtTime(900, t + 0.25);
-    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.setValueAtTime(0.18, t);
     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.26);
     osc.connect(gain);
     gain.connect(this.ctx.destination);
@@ -233,21 +269,20 @@ export class SoundEngine {
 
   public playQuestComplete(): void {
     if (this.isMuted) return;
-    this.initContext();
+    this.unlockAudio();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const notes = [440, 554.37, 659.25, 880];
     notes.forEach((freq, idx) => {
-      this.playSynthNote(t + idx * 0.1, freq, 0.18, 'triangle', 0.2);
+      this.playSynthNote(t + idx * 0.1, freq, 0.18, 'triangle', 0.22);
     });
   }
 
   public playBirthdayFanfare(): void {
     if (this.isMuted) return;
-    this.initContext();
+    this.unlockAudio();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    // Happy Birthday melody fragment
     const fanfare = [
       { f: 392, d: 0.15, p: 0 },
       { f: 392, d: 0.15, p: 0.18 },
@@ -257,7 +292,7 @@ export class SoundEngine {
       { f: 493.88, d: 0.6, p: 1.4 }
     ];
     fanfare.forEach(item => {
-      this.playSynthNote(t + item.p, item.f, item.d, 'square', 0.18);
+      this.playSynthNote(t + item.p, item.f, item.d, 'square', 0.20);
     });
   }
 }
