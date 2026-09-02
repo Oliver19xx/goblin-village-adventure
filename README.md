@@ -1,11 +1,25 @@
 # 🧌 Valentins Geburtstag: Die Goblin-Rave-Odyssee 🎂✨
 
-![Valentins Goblin-Rave-Odyssee Vorschau](public/og-preview.png)
+[![Valentins Goblin-Rave-Odyssee Vorschau](public/og-preview.png)](https://oliver19xx.github.io/goblin-village-adventure/)
 
-> **🎉 Live im Browser spielen:**  
-> **👉 [https://oliver19xx.github.io/goblin-village-adventure/](https://oliver19xx.github.io/goblin-village-adventure/)**
+<p align="center">
+  <a href="https://oliver19xx.github.io/goblin-village-adventure/">
+    <img src="https://img.shields.io/badge/🎮%20DIREKT%20SPIELEN-GitHub%20Pages%20App-ff007f?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Play Game" />
+  </a>
+  <a href="https://oliver19xx.github.io/goblin-village-adventure/">
+    <img src="https://img.shields.io/badge/📱%20Mobile%20PWA-Optimiert-00ffcc?style=for-the-badge&logo=pwa&logoColor=black" alt="PWA Ready" />
+  </a>
+  <a href="https://oliver19xx.github.io/goblin-village-adventure/">
+    <img src="https://img.shields.io/badge/🎵%20Live%20Chiptune-Web%20Audio-ffd700?style=for-the-badge&logo=apple-music&logoColor=black" alt="Web Audio" />
+  </a>
+</p>
 
-Ein charmantes 2D Top-Down Retro-Pixel-RPG für den Browser und Smartphones mit Crafting-System, interaktiven Quests, dynamischer Chiptune-WebAudio-Engine, PWA-Support und zelebriertem Geburtstags-Finale!
+---
+
+### 🌐 Live-Web-App (Sofort im Browser spielen)
+👉 **[https://oliver19xx.github.io/goblin-village-adventure/](https://oliver19xx.github.io/goblin-village-adventure/)**
+
+*(Einfach anklicken – läuft direkt auf dem Smartphone oder Desktop ohne Download!)*
 
 ---
 
@@ -21,11 +35,11 @@ Reise durch die Teleport-Portale zu den Raves, hilf deinen Freunden bei ihren Qu
 
 ---
 
-## 🎂 Das Geburtstags-Finale
+## 🎂 Das zweistufige Geburtstags-Finale
 
 1. **🔨 Kuchen backen:** Backe an der Werkbank im Party-Hub den gigantischen 3-Tier-Geburtstagskuchen.
-2. **🎉 Partytisch in der Mitte:** Trage den Kuchen zum festlich geschmückten Tisch im Zentrum des Bauwagenplatzes.
-3. **🪩 Die Party des Jahrhunderts:** Sobald der Kuchen platziert ist, starten alle Freunde den synchronen Goblin-Tanz, Kerzenlichter und Konfetti-Feuerwerk erleuchten den Platz und die triumphale Rave-Fanfare ertönt!
+2. **🎉 Partytisch in der Mitte:** Trage den fertigen Kuchen zum festlich geschmückten Tisch im Zentrum des Bauwagenplatzes.
+3. **🪩 Die Party des Jahrhunderts:** Sobald der Kuchen aufgestellt ist, starten alle Freunde den synchronen Goblin-Tanz, Kerzenlichter und Konfetti-Feuerwerk erleuchten den Platz und die triumphale Rave-Fanfare ertönt!
 
 ---
 
@@ -92,3 +106,10 @@ npm run dev
 npm run build
 node scratch/e2e_test.js
 ```
+
+---
+
+<p align="center">
+  <b>Viel Spaß beim Spielen! 🧌🎂</b><br>
+  👉 <a href="https://oliver19xx.github.io/goblin-village-adventure/">https://oliver19xx.github.io/goblin-village-adventure/</a>
+</p>
