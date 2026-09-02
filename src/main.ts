@@ -6,13 +6,13 @@ import { UIScene } from './scenes/UIScene';
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: window.innerWidth,
-  height: window.innerHeight,
-  pixelArt: true,
   scale: {
     mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: window.innerWidth,
+    height: window.innerHeight
   },
+  pixelArt: true,
   physics: {
     default: 'arcade',
     arcade: {

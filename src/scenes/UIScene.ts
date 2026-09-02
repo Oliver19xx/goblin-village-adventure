@@ -23,14 +23,10 @@ export class UIScene extends Phaser.Scene {
 
   // Modals & Panels
   private dialogueBox!: Phaser.GameObjects.Container;
-  private dialoguePortrait!: Phaser.GameObjects.Sprite;
-  private dialogueName!: Phaser.GameObjects.Text;
-  private dialogueText!: Phaser.GameObjects.Text;
-  private dialogueOptionsContainer!: Phaser.GameObjects.Container;
-
   private craftingModal!: Phaser.GameObjects.Container;
   private questModal!: Phaser.GameObjects.Container;
   private finaleModal!: Phaser.GameObjects.Container;
+  private currentDialogueNodeId: string | null = null;
 
   // Toast notifications
   private toastContainer!: Phaser.GameObjects.Container;
@@ -51,35 +47,46 @@ export class UIScene extends Phaser.Scene {
     super({ key: 'UIScene' });
   }
 
+  private getViewport(): { w: number; h: number; isPortrait: boolean } {
+    const w = this.scale.width > 0 ? this.scale.width : (window.innerWidth || 390);
+    const h = this.scale.height > 0 ? this.scale.height : (window.innerHeight || 844);
+    const isPortrait = h > w || w < 600;
+    return { w, h, isPortrait };
+  }
+
   create(): void {
     const state = GameState.getInstance();
 
     this.setupTopHUD();
     this.setupSoundBanner();
-    this.setupDialogueBox();
-    this.setupCraftingModal();
-    this.setupQuestModal();
-    this.setupFinaleModal();
+    this.setupContainers();
     this.setupToast();
     this.setupMobileControls();
 
     // Listen to screen resize & orientation change
     this.scale.on('resize', this.handleResize, this);
 
+    // Initial Layout calculation
+    this.layoutUI();
+    this.updateHUD();
+
     // Listen to GameState events
     state.on('inventory_changed', () => this.updateHUD());
     state.on('upgrade_crafted', () => {
       this.updateHUD();
-      this.refreshCraftingList();
+      if (this.craftingModal.visible) this.renderCraftingModal();
     });
     state.on('friend_recruited', (friendId: string) => {
       this.updateHUD();
       this.showToast(`🎉 ${friendId.toUpperCase()} ist jetzt auf deiner Party!`);
     });
-    state.on('quest_updated', () => this.updateHUD());
+    state.on('quest_updated', () => {
+      this.updateHUD();
+      if (this.questModal.visible) this.renderQuestModal();
+    });
     state.on('birthday_finale', () => this.openFinaleModal());
 
-    // Hotkeys
+    // Hotkeys for Desktop testing
     this.input.keyboard?.on('keydown-C', () => this.toggleCraftingModal());
     this.input.keyboard?.on('keydown-Q', () => this.toggleQuestModal());
     this.input.keyboard?.on('keydown-M', () => this.toggleSound());
@@ -99,17 +106,24 @@ export class UIScene extends Phaser.Scene {
     } else if (demo === 'finale') {
       this.openFinaleModal();
     }
+  }
 
-    this.layoutUI();
-    this.updateHUD();
+  private setupContainers(): void {
+    const { w, h } = this.getViewport();
+
+    this.dialogueBox = this.add.container(w / 2, h - 110).setDepth(200).setVisible(false);
+    this.craftingModal = this.add.container(w / 2, h / 2).setDepth(210).setVisible(false);
+    this.questModal = this.add.container(w / 2, h / 2).setDepth(210).setVisible(false);
+    this.finaleModal = this.add.container(w / 2, h / 2).setDepth(300).setVisible(false);
   }
 
   // --- 1. SOUND BANNER FOR MOBILE AUTOPLAY UNLOCK ---
   private setupSoundBanner(): void {
-    const w = this.scale.width;
-    this.soundBanner = this.add.container(w / 2, 70).setDepth(260);
+    const { w } = this.getViewport();
+    this.soundBanner = this.add.container(w / 2, 85).setDepth(260);
 
-    const bg = this.add.rectangle(0, 0, 320, 36, 0xff007f, 0.95)
+    const bannerW = Math.min(320, w - 24);
+    const bg = this.add.rectangle(0, 0, bannerW, 36, 0xff007f, 0.95)
       .setStrokeStyle(2, 0xffffff);
 
     const txt = this.add.text(0, 0, '🎧 Tippe hier für Sound & Beats!', {
@@ -120,7 +134,7 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.soundBanner.add([bg, txt]);
-    this.soundBanner.setSize(320, 36);
+    this.soundBanner.setSize(bannerW, 36);
     this.soundBanner.setInteractive({ useHandCursor: true });
 
     this.soundBanner.on('pointerdown', () => {
@@ -130,9 +144,8 @@ export class UIScene extends Phaser.Scene {
       this.showToast('🔊 Party-Sound aktiviert!');
     });
 
-    // Automatically hide after first touch anywhere
     this.input.on('pointerdown', () => {
-      if (this.soundBanner.visible) {
+      if (this.soundBanner && this.soundBanner.visible) {
         SoundEngine.getInstance().unlockAudio();
         this.soundBanner.setVisible(false);
       }
@@ -143,17 +156,17 @@ export class UIScene extends Phaser.Scene {
   private setupTopHUD(): void {
     this.hudContainer = this.add.container(0, 0).setDepth(100);
 
-    this.topHeaderBg = this.add.rectangle(0, 0, 100, 48, 0x0a0614, 0.95)
+    this.topHeaderBg = this.add.rectangle(0, 0, 100, 70, 0x0a0614, 0.95)
       .setStrokeStyle(2, 0x4d396d);
 
-    this.zoneText = this.add.text(0, 0, '🧌 BAUWAGENPLATZ', {
+    this.zoneText = this.add.text(0, 0, '🧌 Party-Hub', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '14px',
+      fontSize: '13px',
       color: '#00ffcc',
       fontStyle: 'bold'
     }).setOrigin(0, 0.5);
 
-    this.progressBarBg = this.add.rectangle(0, 0, 100, 16, 0x1f1730)
+    this.progressBarBg = this.add.rectangle(0, 0, 90, 16, 0x1f1730)
       .setStrokeStyle(1.5, 0x7a5a9e);
 
     this.progressBarFill = this.add.rectangle(0, 0, 0, 14, 0xff007f)
@@ -161,14 +174,13 @@ export class UIScene extends Phaser.Scene {
 
     this.progressLabel = this.add.text(0, 0, '0%', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#ff99dd',
       fontStyle: 'bold'
     }).setOrigin(0, 0.5);
 
     this.inventoryContainer = this.add.container(0, 0);
 
-    // Header buttons (Quests, Bauen, Sound)
     this.questBtnContainer = this.createHeaderButton('📜 Quests', () => this.toggleQuestModal());
     this.craftBtnContainer = this.createHeaderButton('🔨 Bauen', () => this.toggleCraftingModal());
     
@@ -203,18 +215,18 @@ export class UIScene extends Phaser.Scene {
 
   private createHeaderButton(text: string, onClick: () => void): Phaser.GameObjects.Container {
     const container = this.add.container(0, 0);
-    const bg = this.add.rectangle(0, 0, 84, 30, 0x261a40)
+    const bg = this.add.rectangle(0, 0, 80, 28, 0x261a40)
       .setStrokeStyle(1.5, 0x8a45d0);
 
     const lbl = this.add.text(0, 0, text, {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '12px',
+      fontSize: '11px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
     container.add([bg, lbl]);
-    container.setSize(84, 30);
+    container.setSize(80, 28);
     container.setInteractive({ useHandCursor: true });
 
     container.on('pointerdown', () => {
@@ -231,10 +243,10 @@ export class UIScene extends Phaser.Scene {
     const state = GameState.getInstance();
 
     const zoneNames: { [k: string]: string } = {
-      hub: '🧌 Valentins Party-Hub',
-      kanal: '🎧 Kanal-Rave (Olli)',
-      skatehalle: '🛹 Skatehalle (Leander)',
-      autobahn: '🍬 Autobahnbrücke (Candy)'
+      hub: '🧌 Party-Hub',
+      kanal: '🎧 Kanal-Rave',
+      skatehalle: '🛹 Skatehalle',
+      autobahn: '🍬 Autobahn'
     };
     this.zoneText.setText(zoneNames[state.currentZone] || 'Unbekannt');
 
@@ -276,119 +288,139 @@ export class UIScene extends Phaser.Scene {
     if (this.soundBanner) this.soundBanner.setVisible(false);
   }
 
-  // --- 3. RESPONSIVE DIALOGUE SYSTEM ---
-  private setupDialogueBox(): void {
-    const w = this.scale.width;
-    const h = this.scale.height;
-
-    this.dialogueBox = this.add.container(w / 2, h - 90).setDepth(200).setVisible(false);
-
-    const bg = this.add.rectangle(0, 0, 400, 160, 0x0c0818, 0.98)
-      .setStrokeStyle(2.5, 0xff007f);
-
-    this.dialoguePortrait = this.add.sprite(0, 0, 'valentin_idle').setScale(2.4);
-
-    this.dialogueName = this.add.text(0, 0, 'Speaker Name', {
-      fontFamily: 'Outfit, sans-serif',
-      fontSize: '15px',
-      color: '#00ffcc',
-      fontStyle: 'bold'
-    });
-
-    this.dialogueText = this.add.text(0, 0, '', {
-      fontFamily: 'Outfit, sans-serif',
-      fontSize: '14px',
-      color: '#ffffff',
-      wordWrap: { width: 300 },
-      lineSpacing: 4
-    });
-
-    this.dialogueOptionsContainer = this.add.container(0, 0);
-
-    this.dialogueBox.add([bg, this.dialoguePortrait, this.dialogueName, this.dialogueText, this.dialogueOptionsContainer]);
+  // --- 3. DYNAMIC RESPONSIVE DIALOGUE SYSTEM ---
+  public openDialogue(nodeId: string): void {
+    this.currentDialogueNodeId = nodeId;
+    this.setMobileControlsVisible(false);
+    this.renderDialogueBox(nodeId);
+    this.dialogueBox.setVisible(true);
   }
 
-  public openDialogue(nodeId: string): void {
+  private renderDialogueBox(nodeId: string): void {
     const node = DIALOGUES[nodeId];
     if (!node) return;
 
-    this.setMobileControlsVisible(false);
-    this.dialogueBox.setVisible(true);
-    this.dialoguePortrait.setTexture(`${node.speaker}_idle`);
-    this.dialogueName.setText(node.speakerName);
-    this.dialogueText.setText(node.text);
+    this.dialogueBox.removeAll(true);
 
-    this.layoutDialogueBox(node);
-  }
+    const { w, h, isPortrait } = this.getViewport();
 
-  private layoutDialogueBox(node: typeof DIALOGUES[string]): void {
-    const w = this.scale.width;
-    const h = this.scale.height;
-    const isMobile = w < 600;
-
-    const boxW = Math.min(840, w - 16);
-    const boxH = isMobile ? Math.min(200, h * 0.42) : 160;
+    const numOptions = node.options ? node.options.length : 0;
+    const boxW = isPortrait ? Math.min(365, w - 16) : Math.min(680, w - 24);
+    const boxH = isPortrait ? (numOptions > 1 ? 240 : 190) : 160;
 
     this.dialogueBox.setPosition(w / 2, h - boxH / 2 - 10);
 
-    const bg = this.dialogueBox.getAt(0) as Phaser.GameObjects.Rectangle;
-    bg.setSize(boxW, boxH);
+    const bg = this.add.rectangle(0, 0, boxW, boxH, 0x0c0818, 0.98)
+      .setStrokeStyle(2.5, 0xff007f);
 
-    if (isMobile) {
-      // In portrait: compact top avatar, text spans full width
-      this.dialoguePortrait.setPosition(-boxW / 2 + 30, -boxH / 2 + 25).setScale(1.8);
-      this.dialogueName.setPosition(-boxW / 2 + 65, -boxH / 2 + 18);
-      this.dialogueText.setPosition(-boxW / 2 + 18, -boxH / 2 + 48)
-        .setStyle({ wordWrap: { width: boxW - 36 }, fontSize: '13px' });
-      this.dialogueOptionsContainer.setPosition(0, boxH / 2 - 32);
-    } else {
-      this.dialoguePortrait.setPosition(-boxW / 2 + 60, -10).setScale(2.6);
-      this.dialogueName.setPosition(-boxW / 2 + 125, -58);
-      this.dialogueText.setPosition(-boxW / 2 + 125, -34)
-        .setStyle({ wordWrap: { width: boxW - 150 }, fontSize: '14px' });
-      this.dialogueOptionsContainer.setPosition(0, 42);
-    }
-
-    // Render Option Buttons
-    this.dialogueOptionsContainer.removeAll(true);
-
-    if (node.options && node.options.length > 0) {
-      const numOptions = node.options.length;
-      const btnWidth = isMobile ? Math.min(boxW - 30, 260) : Math.min(260, (boxW - 160) / numOptions - 10);
-      let optX = isMobile ? 0 : -boxW / 2 + 130 + btnWidth / 2;
-
-      node.options.forEach(opt => {
-        const btnBg = this.add.rectangle(optX, 0, btnWidth, 34, 0x251442)
-          .setStrokeStyle(2, 0x00ffcc)
-          .setInteractive({ useHandCursor: true });
-
-        const btnText = this.add.text(optX, 0, opt.label, {
-          fontFamily: 'Outfit, sans-serif',
-          fontSize: '12px',
-          color: '#ffffff',
-          fontStyle: 'bold',
-          wordWrap: { width: btnWidth - 10 },
-          align: 'center'
-        }).setOrigin(0.5);
-
-        btnBg.on('pointerdown', () => {
-          SoundEngine.getInstance().playPickup();
-          if (opt.action) {
-            this.handleDialogueAction(opt.action);
-          }
-          if (opt.nextNodeId) {
-            this.openDialogue(opt.nextNodeId);
-          } else {
-            this.closeDialogue();
-          }
-        });
-
-        this.dialogueOptionsContainer.add([btnBg, btnText]);
-        if (!isMobile) optX += btnWidth + 12;
+    if (isPortrait) {
+      const portrait = this.add.sprite(-boxW / 2 + 24, -boxH / 2 + 24, `${node.speaker}_idle`).setScale(1.6);
+      const nameTxt = this.add.text(-boxW / 2 + 50, -boxH / 2 + 16, node.speakerName, {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: '13px',
+        color: '#00ffcc',
+        fontStyle: 'bold'
       });
+
+      const bodyTxt = this.add.text(-boxW / 2 + 14, -boxH / 2 + 50, node.text, {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: '12px',
+        color: '#ffffff',
+        wordWrap: { width: boxW - 28 },
+        lineSpacing: 3
+      });
+
+      this.dialogueBox.add([bg, portrait, nameTxt, bodyTxt]);
+
+      if (node.options && node.options.length > 0) {
+        let optY = boxH / 2 - (numOptions > 1 ? 48 : 26);
+        const btnWidth = boxW - 24;
+
+        node.options.forEach(opt => {
+          const btnBg = this.add.rectangle(0, optY, btnWidth, 34, 0x251442)
+            .setStrokeStyle(2, 0x00ffcc)
+            .setInteractive({ useHandCursor: true });
+
+          const btnText = this.add.text(0, optY, opt.label, {
+            fontFamily: 'Outfit, sans-serif',
+            fontSize: '11px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            wordWrap: { width: btnWidth - 12 },
+            align: 'center'
+          }).setOrigin(0.5);
+
+          btnBg.on('pointerdown', () => {
+            SoundEngine.getInstance().playPickup();
+            if (opt.action) this.handleDialogueAction(opt.action);
+            if (opt.nextNodeId) {
+              this.renderDialogueBox(opt.nextNodeId);
+            } else {
+              this.closeDialogue();
+            }
+          });
+
+          this.dialogueBox.add([btnBg, btnText]);
+          optY += 38;
+        });
+      } else {
+        this.dialogueBox.setInteractive(new Phaser.Geom.Rectangle(-boxW / 2, -boxH / 2, boxW, boxH), Phaser.Geom.Rectangle.Contains);
+        this.dialogueBox.once('pointerdown', () => this.closeDialogue());
+      }
     } else {
-      this.dialogueBox.setInteractive(new Phaser.Geom.Rectangle(-boxW / 2, -boxH / 2, boxW, boxH), Phaser.Geom.Rectangle.Contains);
-      this.dialogueBox.once('pointerdown', () => this.closeDialogue());
+      const portrait = this.add.sprite(-boxW / 2 + 55, -10, `${node.speaker}_idle`).setScale(2.4);
+      const nameTxt = this.add.text(-boxW / 2 + 115, -55, node.speakerName, {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: '15px',
+        color: '#00ffcc',
+        fontStyle: 'bold'
+      });
+
+      const bodyTxt = this.add.text(-boxW / 2 + 115, -30, node.text, {
+        fontFamily: 'Outfit, sans-serif',
+        fontSize: '14px',
+        color: '#ffffff',
+        wordWrap: { width: boxW - 140 },
+        lineSpacing: 4
+      });
+
+      this.dialogueBox.add([bg, portrait, nameTxt, bodyTxt]);
+
+      if (node.options && node.options.length > 0) {
+        const btnWidth = Math.min(240, (boxW - 140) / numOptions - 10);
+        let optX = -boxW / 2 + 115 + btnWidth / 2;
+
+        node.options.forEach(opt => {
+          const btnBg = this.add.rectangle(optX, 42, btnWidth, 34, 0x251442)
+            .setStrokeStyle(2, 0x00ffcc)
+            .setInteractive({ useHandCursor: true });
+
+          const btnText = this.add.text(optX, 42, opt.label, {
+            fontFamily: 'Outfit, sans-serif',
+            fontSize: '12px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            wordWrap: { width: btnWidth - 10 },
+            align: 'center'
+          }).setOrigin(0.5);
+
+          btnBg.on('pointerdown', () => {
+            SoundEngine.getInstance().playPickup();
+            if (opt.action) this.handleDialogueAction(opt.action);
+            if (opt.nextNodeId) {
+              this.renderDialogueBox(opt.nextNodeId);
+            } else {
+              this.closeDialogue();
+            }
+          });
+
+          this.dialogueBox.add([btnBg, btnText]);
+          optX += btnWidth + 12;
+        });
+      } else {
+        this.dialogueBox.setInteractive(new Phaser.Geom.Rectangle(-boxW / 2, -boxH / 2, boxW, boxH), Phaser.Geom.Rectangle.Contains);
+        this.dialogueBox.once('pointerdown', () => this.closeDialogue());
+      }
     }
   }
 
@@ -410,48 +442,15 @@ export class UIScene extends Phaser.Scene {
   }
 
   private closeDialogue(): void {
+    this.currentDialogueNodeId = null;
     this.dialogueBox.setVisible(false);
     this.setMobileControlsVisible(true);
   }
 
-  // --- 4. RESPONSIVE CRAFTING MODAL ---
-  private setupCraftingModal(): void {
-    const w = this.scale.width;
-    const h = this.scale.height;
-
-    this.craftingModal = this.add.container(w / 2, h / 2).setDepth(210).setVisible(false);
-
-    const modalW = Math.min(720, w - 16);
-    const modalH = Math.min(520, h - 24);
-
-    const bg = this.add.rectangle(0, 0, modalW, modalH, 0x0f0b1e, 0.98)
-      .setStrokeStyle(2.5, 0xffd700);
-
-    const title = this.add.text(0, -modalH / 2 + 26, '🔨 WERKBANK: PARTY-AUSBAU', {
-      fontFamily: 'Outfit, sans-serif',
-      fontSize: '18px',
-      color: '#ffd700',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    const closeBtnBg = this.add.circle(modalW / 2 - 24, -modalH / 2 + 26, 18, 0x2b153b, 0.95)
-      .setStrokeStyle(1.5, 0xff007f)
-      .setInteractive({ useHandCursor: true });
-
-    const closeBtn = this.add.text(modalW / 2 - 24, -modalH / 2 + 26, '✖', {
-      fontFamily: 'Outfit, sans-serif',
-      fontSize: '16px',
-      color: '#ff4da6'
-    }).setOrigin(0.5);
-
-    closeBtnBg.on('pointerdown', () => this.toggleCraftingModal());
-
-    this.craftingModal.add([bg, title, closeBtnBg, closeBtn]);
-  }
-
+  // --- 4. DYNAMIC RESPONSIVE CRAFTING MODAL ---
   public openCraftingMenu(): void {
     this.setMobileControlsVisible(false);
-    this.refreshCraftingList();
+    this.renderCraftingModal();
     this.craftingModal.setVisible(true);
     SoundEngine.getInstance().playPickup();
   }
@@ -465,38 +464,57 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  private refreshCraftingList(): void {
+  private renderCraftingModal(): void {
+    this.craftingModal.removeAll(true);
+
     const state = GameState.getInstance();
-    const w = this.scale.width;
-    const isMobile = w < 600;
+    const { w, h, isPortrait } = this.getViewport();
 
-    while (this.craftingModal.length > 4) {
-      this.craftingModal.removeAt(4, true);
-    }
+    const modalW = isPortrait ? Math.min(365, w - 16) : Math.min(640, w - 24);
+    const modalH = isPortrait ? Math.min(520, h - 80) : Math.min(500, h - 30);
 
-    const modalW = Math.min(720, this.scale.width - 16);
-    let yOffset = -155;
+    this.craftingModal.setPosition(w / 2, h / 2);
+
+    const bg = this.add.rectangle(0, 0, modalW, modalH, 0x0f0b1e, 0.98)
+      .setStrokeStyle(2.5, 0xffd700);
+
+    const title = this.add.text(0, -modalH / 2 + 22, '🔨 WERKBANK: AUSBAU', {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: isPortrait ? '14px' : '16px',
+      color: '#ffd700',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    const closeBtnBg = this.add.circle(modalW / 2 - 20, -modalH / 2 + 22, 16, 0x2b153b, 0.95)
+      .setStrokeStyle(1.5, 0xff007f)
+      .setInteractive({ useHandCursor: true });
+
+    const closeBtn = this.add.text(modalW / 2 - 20, -modalH / 2 + 22, '✖', {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: '15px',
+      color: '#ff4da6'
+    }).setOrigin(0.5);
+
+    closeBtnBg.on('pointerdown', () => this.toggleCraftingModal());
+
+    this.craftingModal.add([bg, title, closeBtnBg, closeBtn]);
+
+    const cardH = isPortrait ? 68 : 58;
+    let yOffset = -modalH / 2 + 54;
 
     state.craftingRecipes.forEach(recipe => {
-      const cardBg = this.add.rectangle(0, yOffset + 28, modalW - 24, 60, 0x1a1236)
+      const cardBg = this.add.rectangle(0, yOffset + cardH / 2, modalW - 16, cardH, 0x1a1236)
         .setStrokeStyle(1.5, recipe.built ? 0x00ff88 : 0x5a4878);
 
-      const icon = this.add.image(-modalW / 2 + 36, yOffset + 28, recipe.icon).setScale(0.9);
+      const icon = this.add.image(-modalW / 2 + 24, yOffset + cardH / 2, recipe.icon).setScale(0.8);
 
-      const nameTxt = this.add.text(-modalW / 2 + 65, yOffset + 12, recipe.name, {
+      const nameTxt = this.add.text(-modalW / 2 + 48, yOffset + 10, recipe.name, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: isMobile ? '13px' : '14px',
+        fontSize: isPortrait ? '12px' : '13px',
         color: recipe.built ? '#00ff88' : '#ffffff',
         fontStyle: 'bold'
       });
 
-      const descTxt = this.add.text(-modalW / 2 + 65, yOffset + 32, isMobile ? recipe.description.substring(0, 24) + '...' : recipe.description, {
-        fontFamily: 'Outfit, sans-serif',
-        fontSize: '11px',
-        color: '#bbbbbb'
-      });
-
-      // Cost summary
       let costStr = recipe.costs.map(c => {
         const cur = state.getItemCount(c.itemId);
         const name = state.inventory.get(c.itemId)?.name || c.itemId;
@@ -507,32 +525,33 @@ export class UIScene extends Phaser.Scene {
         costStr = `🔒 Braucht ${recipe.requiredFriendId.toUpperCase()}`;
       }
 
-      const costTxt = this.add.text(isMobile ? 30 : modalW / 2 - 175, yOffset + 28, costStr, {
+      const costTxt = this.add.text(-modalW / 2 + 48, yOffset + 36, costStr, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '11px',
+        fontSize: '10px',
         color: '#ffbb44',
-        fontStyle: 'bold'
-      }).setOrigin(0.5);
+        fontStyle: 'bold',
+        wordWrap: { width: modalW - 130 }
+      });
 
       if (recipe.built) {
-        const builtBadge = this.add.text(modalW / 2 - 55, yOffset + 28, '✓ GEBAUT', {
+        const builtBadge = this.add.text(modalW / 2 - 40, yOffset + cardH / 2, '✓ GEBAUT', {
           fontFamily: 'Outfit, sans-serif',
-          fontSize: '13px',
+          fontSize: '11px',
           color: '#00ff88',
           fontStyle: 'bold'
         }).setOrigin(0.5);
-        this.craftingModal.add([cardBg, icon, nameTxt, descTxt, costTxt, builtBadge]);
+        this.craftingModal.add([cardBg, icon, nameTxt, costTxt, builtBadge]);
       } else {
         const canBuild = (!recipe.requiredFriendId || state.isFriendRecruited(recipe.requiredFriendId)) &&
           recipe.costs.every(c => state.getItemCount(c.itemId) >= c.amount);
 
-        const btnBg = this.add.rectangle(modalW / 2 - 55, yOffset + 28, 80, 32, canBuild ? 0xff007f : 0x2d2242)
+        const btnBg = this.add.rectangle(modalW / 2 - 40, yOffset + cardH / 2, 64, 28, canBuild ? 0xff007f : 0x2d2242)
           .setStrokeStyle(1.5, canBuild ? 0xff66cc : 0x555555)
           .setInteractive({ useHandCursor: canBuild });
 
-        const btnTxt = this.add.text(modalW / 2 - 55, yOffset + 28, 'BAUEN', {
+        const btnTxt = this.add.text(modalW / 2 - 40, yOffset + cardH / 2, 'BAUEN', {
           fontFamily: 'Outfit, sans-serif',
-          fontSize: '13px',
+          fontSize: '11px',
           color: canBuild ? '#ffffff' : '#777777',
           fontStyle: 'bold'
         }).setOrigin(0.5);
@@ -540,149 +559,154 @@ export class UIScene extends Phaser.Scene {
         if (canBuild) {
           btnBg.on('pointerdown', () => {
             if (state.craftUpgrade(recipe.id)) {
-              this.showToast(`✨ ${recipe.name} erfolgreich gebaut!`);
+              this.showToast(`✨ ${recipe.name} gebaut!`);
+              this.renderCraftingModal();
             }
           });
         }
 
-        this.craftingModal.add([cardBg, icon, nameTxt, descTxt, costTxt, btnBg, btnTxt]);
+        this.craftingModal.add([cardBg, icon, nameTxt, costTxt, btnBg, btnTxt]);
       }
 
-      yOffset += 68;
+      yOffset += cardH + 6;
     });
   }
 
-  // --- 5. RESPONSIVE QUEST MODAL ---
-  private setupQuestModal(): void {
-    const w = this.scale.width;
-    const h = this.scale.height;
+  // --- 5. DYNAMIC RESPONSIVE QUEST MODAL ---
+  public toggleQuestModal(): void {
+    if (this.questModal.visible) {
+      this.questModal.setVisible(false);
+      this.setMobileControlsVisible(true);
+    } else {
+      this.setMobileControlsVisible(false);
+      this.renderQuestModal();
+      this.questModal.setVisible(true);
+      SoundEngine.getInstance().playPickup();
+    }
+  }
 
-    this.questModal = this.add.container(w / 2, h / 2).setDepth(210).setVisible(false);
+  private renderQuestModal(): void {
+    this.questModal.removeAll(true);
 
-    const modalW = Math.min(720, w - 16);
-    const modalH = Math.min(500, h - 24);
+    const state = GameState.getInstance();
+    const { w, h, isPortrait } = this.getViewport();
+
+    const modalW = isPortrait ? Math.min(365, w - 16) : Math.min(640, w - 24);
+    const modalH = isPortrait ? Math.min(520, h - 80) : Math.min(500, h - 30);
+
+    this.questModal.setPosition(w / 2, h / 2);
 
     const bg = this.add.rectangle(0, 0, modalW, modalH, 0x100a26, 0.98)
       .setStrokeStyle(2.5, 0x00ffcc);
 
-    const title = this.add.text(0, -modalH / 2 + 26, '📜 GEBURTSTAGS-TAGEBUCH & QUESTS', {
+    const title = this.add.text(0, -modalH / 2 + 22, '📜 QUESTS & FREUNDE', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '18px',
+      fontSize: isPortrait ? '14px' : '16px',
       color: '#00ffcc',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const closeBtnBg = this.add.circle(modalW / 2 - 24, -modalH / 2 + 26, 18, 0x23143d, 0.95)
+    const closeBtnBg = this.add.circle(modalW / 2 - 20, -modalH / 2 + 22, 16, 0x23143d, 0.95)
       .setStrokeStyle(1.5, 0xff007f)
       .setInteractive({ useHandCursor: true });
 
-    const closeBtn = this.add.text(modalW / 2 - 24, -modalH / 2 + 26, '✖', {
+    const closeBtn = this.add.text(modalW / 2 - 20, -modalH / 2 + 22, '✖', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '16px',
+      fontSize: '15px',
       color: '#ff4da6'
     }).setOrigin(0.5);
 
     closeBtnBg.on('pointerdown', () => this.toggleQuestModal());
 
     this.questModal.add([bg, title, closeBtnBg, closeBtn]);
-  }
 
-  private toggleQuestModal(): void {
-    if (this.questModal.visible) {
-      this.questModal.setVisible(false);
-      this.setMobileControlsVisible(true);
-    } else {
-      this.setMobileControlsVisible(false);
-      this.refreshQuestList();
-      this.questModal.setVisible(true);
-      SoundEngine.getInstance().playPickup();
-    }
-  }
-
-  private refreshQuestList(): void {
-    const state = GameState.getInstance();
-
-    while (this.questModal.length > 4) {
-      this.questModal.removeAt(4, true);
-    }
-
-    const modalW = Math.min(720, this.scale.width - 16);
-    let yOffset = -140;
+    const cardH = isPortrait ? 94 : 82;
+    let yOffset = -modalH / 2 + 54;
 
     state.quests.forEach(quest => {
       const isRecruited = state.isFriendRecruited(quest.friendId);
-      const cardBg = this.add.rectangle(0, yOffset + 38, modalW - 24, 82, 0x1b1338)
+      const cardBg = this.add.rectangle(0, yOffset + cardH / 2, modalW - 16, cardH, 0x1b1338)
         .setStrokeStyle(1.5, isRecruited ? 0x00ff88 : 0x00e5ff);
 
-      const titleTxt = this.add.text(-modalW / 2 + 24, yOffset + 10, quest.title, {
+      const titleTxt = this.add.text(-modalW / 2 + 14, yOffset + 10, quest.title, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '14px',
+        fontSize: isPortrait ? '12px' : '13px',
         color: isRecruited ? '#00ff88' : '#ffd700',
         fontStyle: 'bold'
       });
 
       const stepsStr = quest.steps.map(s => `${s.isCompleted ? '☑' : '☐'} ${s.text}`).join('\n');
-      const stepsTxt = this.add.text(-modalW / 2 + 24, yOffset + 30, stepsStr, {
+      const stepsTxt = this.add.text(-modalW / 2 + 14, yOffset + 30, stepsStr, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '12px',
+        fontSize: '10px',
         color: '#ffffff',
+        wordWrap: { width: modalW - 30 },
         lineSpacing: 3
       });
 
-      const statusBadge = this.add.text(modalW / 2 - 60, yOffset + 38, isRecruited ? '🎉 DABEI!' : '⏳ OFFEN', {
+      const statusBadge = this.add.text(modalW / 2 - 42, yOffset + 16, isRecruited ? '🎉 DABEI!' : '⏳ OFFEN', {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '13px',
+        fontSize: '11px',
         color: isRecruited ? '#00ff88' : '#ff9900',
         fontStyle: 'bold'
       }).setOrigin(0.5);
 
       this.questModal.add([cardBg, titleTxt, stepsTxt, statusBadge]);
-      yOffset += 94;
+      yOffset += cardH + 8;
     });
   }
 
-  // --- 6. FINALE MODAL ---
-  private setupFinaleModal(): void {
-    const w = this.scale.width;
-    const h = this.scale.height;
+  // --- 6. DYNAMIC RESPONSIVE FINALE MODAL ---
+  public openFinaleModal(): void {
+    this.setMobileControlsVisible(false);
+    this.renderFinaleModal();
+    this.finaleModal.setVisible(true);
+  }
 
-    this.finaleModal = this.add.container(w / 2, h / 2).setDepth(300).setVisible(false);
+  private renderFinaleModal(): void {
+    this.finaleModal.removeAll(true);
 
-    const modalW = Math.min(720, w - 16);
-    const modalH = Math.min(500, h - 24);
+    const { w, h, isPortrait } = this.getViewport();
+
+    const modalW = isPortrait ? Math.min(365, w - 16) : Math.min(640, w - 24);
+    const modalH = isPortrait ? Math.min(520, h - 80) : Math.min(500, h - 30);
+
+    this.finaleModal.setPosition(w / 2, h / 2);
 
     const bg = this.add.rectangle(0, 0, modalW, modalH, 0x140624, 0.98)
       .setStrokeStyle(3.5, 0xff00ea);
 
-    const title = this.add.text(0, -modalH / 2 + 35, '🎂 HAPPY BIRTHDAY, VALENTIN! 🎂', {
+    const title = this.add.text(0, -modalH / 2 + 24, '🎂 HAPPY BIRTHDAY, VALENTIN! 🎂', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '20px',
+      fontSize: isPortrait ? '14px' : '17px',
       color: '#ffd700',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const vSprite = this.add.sprite(-130, -50, 'valentin_dance').setScale(2.4);
-    const oSprite = this.add.sprite(-45, -50, 'olli_dance').setScale(2.4);
-    const lSprite = this.add.sprite(45, -50, 'leander_dance').setScale(2.4);
-    const cSprite = this.add.sprite(130, -50, 'candy_dance').setScale(2.4);
+    const spacing = isPortrait ? 40 : 70;
+    const vSprite = this.add.sprite(-spacing * 1.5, -modalH / 2 + 75, 'valentin_dance').setScale(1.8);
+    const oSprite = this.add.sprite(-spacing * 0.5, -modalH / 2 + 75, 'olli_dance').setScale(1.8);
+    const lSprite = this.add.sprite(spacing * 0.5, -modalH / 2 + 75, 'leander_dance').setScale(1.8);
+    const cSprite = this.add.sprite(spacing * 1.5, -modalH / 2 + 75, 'candy_dance').setScale(1.8);
 
-    const cakeImg = this.add.image(0, 40, 'prop_birthday_cake').setScale(1.8);
+    const cakeImg = this.add.image(0, -modalH / 2 + 150, 'prop_birthday_cake').setScale(1.4);
 
-    const msg = this.add.text(0, 110, 'Du hast alle deine Freunde gefunden, den Bauwagenplatz ausgebaut\nund die legendärste Goblin-Rave-Party aller Zeiten gestartet!', {
+    const msg = this.add.text(0, modalH / 2 - 90, 'Du hast alle deine Freunde gefunden,\nden Party-Platz ausgebaut und den legendärsten\nGoblin-Rave aller Zeiten gestartet!', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '14px',
+      fontSize: '11px',
       color: '#ffffff',
       align: 'center',
-      lineSpacing: 4
+      wordWrap: { width: modalW - 32 },
+      lineSpacing: 3
     }).setOrigin(0.5);
 
-    const continueBtnBg = this.add.rectangle(0, 175, 210, 40, 0xff007f)
+    const continueBtnBg = this.add.rectangle(0, modalH / 2 - 32, 170, 38, 0xff007f)
       .setStrokeStyle(2, 0xffffff)
       .setInteractive({ useHandCursor: true });
 
-    const continueBtnTxt = this.add.text(0, 175, 'WEITER FEIERN! 🪩', {
+    const continueBtnTxt = this.add.text(0, modalH / 2 - 32, 'WEITER FEIERN! 🪩', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '14px',
+      fontSize: '13px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -697,22 +721,17 @@ export class UIScene extends Phaser.Scene {
     this.finaleModal.add([bg, title, vSprite, oSprite, lSprite, cSprite, cakeImg, msg, continueBtnBg, continueBtnTxt]);
   }
 
-  public openFinaleModal(): void {
-    this.setMobileControlsVisible(false);
-    this.finaleModal.setVisible(true);
-  }
-
   // --- TOAST NOTIFICATIONS ---
   private setupToast(): void {
-    const w = this.scale.width;
-    this.toastContainer = this.add.container(w / 2, 75).setDepth(250).setVisible(false);
+    const { w } = this.getViewport();
+    this.toastContainer = this.add.container(w / 2, 85).setDepth(250).setVisible(false);
 
-    const bg = this.add.rectangle(0, 0, 360, 34, 0x1f1438, 0.95)
+    const bg = this.add.rectangle(0, 0, 300, 32, 0x1f1438, 0.95)
       .setStrokeStyle(2, 0x00ffcc);
 
     this.toastText = this.add.text(0, 0, '', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
@@ -730,14 +749,13 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  // --- 7. MOBILE CONTROLS & ERGONOMICS ---
+  // --- 7. MOBILE TOUCH CONTROLS & ERGONOMICS ---
   private setupMobileControls(): void {
     this.mobileControlsContainer = this.add.container(0, 0).setDepth(150);
 
-    const h = this.scale.height;
-    const w = this.scale.width;
+    const { w, h } = this.getViewport();
 
-    const stickX = 75;
+    const stickX = 65;
     const stickY = h - 75;
 
     this.joystickBase = this.add.image(stickX, stickY, 'ui_stick_base')
@@ -748,7 +766,7 @@ export class UIScene extends Phaser.Scene {
       .setAlpha(0.9);
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.x < 220 && pointer.y > this.scale.height - 200) {
+      if (pointer.x < w * 0.45 && pointer.y > this.scale.height - 240) {
         this.isTouchingStick = true;
         this.touchStartPos = { x: this.joystickBase.x, y: this.joystickBase.y };
         this.updateJoystick(pointer);
@@ -772,17 +790,20 @@ export class UIScene extends Phaser.Scene {
       }
     });
 
-    // Mobile Action Buttons on bottom-right (safe, comfortable spacing)
-    this.btnE = this.createMobileActionBtn(w - 65, h - 75, 'E', 'Aktion', 0xff007f, () => {
+    // Mobile Action Buttons on bottom-right (Thumb Reach Area)
+    // E (Action) - Primary Thumb Button
+    this.btnE = this.createMobileActionBtn(w - 50, h - 75, 'E', 'Aktion', 0xff007f, 30, () => {
       const worldScene = this.scene.get('WorldScene') as WorldScene;
       if (worldScene) worldScene.handleInteraction();
     });
 
-    this.btnC = this.createMobileActionBtn(w - 145, h - 60, 'C', 'Bauen', 0x9900ff, () => {
+    // C (Craft) - Secondary Button
+    this.btnC = this.createMobileActionBtn(w - 120, h - 55, 'C', 'Bauen', 0x9900ff, 24, () => {
       this.toggleCraftingModal();
     });
 
-    this.btnQ = this.createMobileActionBtn(w - 145, h - 135, 'Q', 'Quests', 0x00b4d8, () => {
+    // Q (Quests) - Tertiary Button
+    this.btnQ = this.createMobileActionBtn(w - 120, h - 120, 'Q', 'Quests', 0x00b4d8, 24, () => {
       this.toggleQuestModal();
     });
 
@@ -820,27 +841,27 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
-  private createMobileActionBtn(x: number, y: number, key: string, label: string, color: number, action: () => void): Phaser.GameObjects.Container {
+  private createMobileActionBtn(x: number, y: number, key: string, label: string, color: number, radius: number, action: () => void): Phaser.GameObjects.Container {
     const container = this.add.container(x, y);
-    const bg = this.add.circle(0, 0, 30, color, 0.88)
+    const bg = this.add.circle(0, 0, radius, color, 0.88)
       .setStrokeStyle(2.5, 0xffffff);
 
-    const keyTxt = this.add.text(0, -4, key, {
+    const keyTxt = this.add.text(0, -3, key, {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '18px',
+      fontSize: radius > 26 ? '18px' : '15px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const lblTxt = this.add.text(0, 14, label, {
+    const lblTxt = this.add.text(0, radius > 26 ? 13 : 10, label, {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '9px',
+      fontSize: '8px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
     container.add([bg, keyTxt, lblTxt]);
-    container.setSize(60, 60);
+    container.setSize(radius * 2, radius * 2);
     container.setInteractive({ useHandCursor: true });
 
     container.on('pointerdown', () => {
@@ -856,30 +877,40 @@ export class UIScene extends Phaser.Scene {
   // --- 8. DYNAMIC RESPONSIVE LAYOUT ENGINE ---
   private handleResize(): void {
     this.layoutUI();
+    if (this.currentDialogueNodeId && this.dialogueBox.visible) {
+      this.renderDialogueBox(this.currentDialogueNodeId);
+    }
+    if (this.craftingModal.visible) {
+      this.renderCraftingModal();
+    }
+    if (this.questModal.visible) {
+      this.renderQuestModal();
+    }
+    if (this.finaleModal.visible) {
+      this.renderFinaleModal();
+    }
   }
 
   private layoutUI(): void {
-    const w = this.scale.width;
-    const h = this.scale.height;
-    const isMobilePortrait = w < 600;
+    const { w, h, isPortrait } = this.getViewport();
 
     // Layout Top HUD
     if (this.topHeaderBg) {
-      const hudH = isMobilePortrait ? 66 : 46;
+      const hudH = isPortrait ? 68 : 46;
       this.topHeaderBg.setPosition(w / 2, hudH / 2 + 6).setSize(w - 16, hudH);
 
-      if (isMobilePortrait) {
+      if (isPortrait) {
         // Row 1: Zone left, Progress center, Sound right
         this.zoneText.setPosition(18, 20).setFontSize('12px');
-        this.progressBarBg.setPosition(w / 2 - 20, 20).setSize(70, 14);
-        this.progressBarFill.setPosition(w / 2 - 55, 20);
-        this.progressLabel.setPosition(w / 2 + 20, 20).setFontSize('11px');
-        this.soundBtnContainer.setPosition(w - 32, 20);
+        this.progressBarBg.setPosition(w / 2 - 15, 20).setSize(64, 14);
+        this.progressBarFill.setPosition(w / 2 - 47, 20);
+        this.progressLabel.setPosition(w / 2 + 22, 20).setFontSize('11px');
+        this.soundBtnContainer.setPosition(w - 28, 20);
 
         // Row 2: Inventory Pills
         this.inventoryContainer.setPosition(18, 48);
 
-        // Hide desktop header text buttons (mobile uses bottom action buttons [Q], [C])
+        // Mobile uses thumb buttons [Q] and [C]
         this.questBtnContainer.setVisible(false);
         this.craftBtnContainer.setVisible(false);
       } else {
@@ -898,28 +929,23 @@ export class UIScene extends Phaser.Scene {
     }
 
     if (this.soundBanner) {
-      this.soundBanner.setPosition(w / 2, isMobilePortrait ? 85 : 70);
+      this.soundBanner.setPosition(w / 2, isPortrait ? 90 : 70);
     }
 
     if (this.toastContainer) {
-      this.toastContainer.setPosition(w / 2, isMobilePortrait ? 95 : 75);
+      this.toastContainer.setPosition(w / 2, isPortrait ? 95 : 75);
     }
 
     // Layout Mobile Joystick & Action Buttons
     if (this.joystickBase) {
-      const stickX = 75;
+      const stickX = 65;
       const stickY = h - 75;
       this.joystickBase.setPosition(stickX, stickY);
       if (this.touchKnob) this.touchKnob.setPosition(stickX, stickY);
     }
 
-    if (this.btnE) this.btnE.setPosition(w - 65, h - 75);
-    if (this.btnC) this.btnC.setPosition(w - 145, h - 60);
-    if (this.btnQ) this.btnQ.setPosition(w - 145, h - 135);
-
-    // Layout Modals
-    if (this.craftingModal) this.craftingModal.setPosition(w / 2, h / 2);
-    if (this.questModal) this.questModal.setPosition(w / 2, h / 2);
-    if (this.finaleModal) this.finaleModal.setPosition(w / 2, h / 2);
+    if (this.btnE) this.btnE.setPosition(w - 50, h - 75);
+    if (this.btnC) this.btnC.setPosition(w - 120, h - 55);
+    if (this.btnQ) this.btnQ.setPosition(w - 120, h - 120);
   }
 }

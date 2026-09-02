@@ -9,6 +9,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Ensure initial scale matches window viewport
+    this.scale.resize(window.innerWidth, window.innerHeight);
+
     // Generate all procedural textures
     TextureGenerator.generateAll(this);
 
