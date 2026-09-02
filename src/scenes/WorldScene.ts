@@ -30,6 +30,7 @@ export class WorldScene extends Phaser.Scene {
   private portals: Portal[] = [];
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private hubUpgrades: Phaser.GameObjects.GameObject[] = [];
+  private zoneObjects: Phaser.GameObjects.GameObject[] = [];
 
   private interactPrompt!: Phaser.GameObjects.Container;
   private promptText!: Phaser.GameObjects.Text;
@@ -114,6 +115,8 @@ export class WorldScene extends Phaser.Scene {
     this.hubUpgrades = [];
     this.discoLights.forEach(l => l.destroy());
     this.discoLights = [];
+    this.zoneObjects.forEach(obj => obj.destroy());
+    this.zoneObjects = [];
     if (this.zoneAtmosphereParticles) {
       this.zoneAtmosphereParticles.destroy();
     }
@@ -155,7 +158,8 @@ export class WorldScene extends Phaser.Scene {
     for (let x = 0; x < 960; x += 32) {
       for (let y = 0; y < 640; y += 32) {
         const isPath = (x >= 400 && x <= 560) || (y >= 280 && y <= 380);
-        this.add.image(x + 16, y + 16, isPath ? 'tile_dirt' : 'tile_grass').setDepth(0);
+        const tile = this.add.image(x + 16, y + 16, isPath ? 'tile_dirt' : 'tile_grass').setDepth(0);
+        this.zoneObjects.push(tile);
       }
     }
 
@@ -235,11 +239,8 @@ export class WorldScene extends Phaser.Scene {
     // Water at bottom, Grass at top
     for (let x = 0; x < 960; x += 32) {
       for (let y = 0; y < 640; y += 32) {
-        if (y >= 440) {
-          this.add.image(x + 16, y + 16, 'tile_water').setDepth(0);
-        } else {
-          this.add.image(x + 16, y + 16, 'tile_grass').setDepth(0);
-        }
+        const tile = this.add.image(x + 16, y + 16, y >= 440 ? 'tile_water' : 'tile_grass').setDepth(0);
+        this.zoneObjects.push(tile);
       }
     }
 
@@ -269,7 +270,8 @@ export class WorldScene extends Phaser.Scene {
       this.npcs.push(olliNpc);
 
       // DJ Turntables next to Olli
-      this.add.image(520, 220, 'prop_dj_booth').setDepth(5);
+      const booth = this.add.image(520, 220, 'prop_dj_booth').setDepth(5);
+      this.zoneObjects.push(booth);
     }
 
     // Quest Items to collect
@@ -292,7 +294,8 @@ export class WorldScene extends Phaser.Scene {
     // Concrete floor
     for (let x = 0; x < 960; x += 32) {
       for (let y = 0; y < 640; y += 32) {
-        this.add.image(x + 16, y + 16, 'tile_concrete').setDepth(0);
+        const tile = this.add.image(x + 16, y + 16, 'tile_concrete').setDepth(0);
+        this.zoneObjects.push(tile);
       }
     }
 
@@ -342,7 +345,8 @@ export class WorldScene extends Phaser.Scene {
     // Dark Asphalt floor
     for (let x = 0; x < 960; x += 32) {
       for (let y = 0; y < 640; y += 32) {
-        this.add.image(x + 16, y + 16, 'tile_asphalt').setDepth(0);
+        const tile = this.add.image(x + 16, y + 16, 'tile_asphalt').setDepth(0);
+        this.zoneObjects.push(tile);
       }
     }
 
