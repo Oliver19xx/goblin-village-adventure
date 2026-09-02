@@ -127,8 +127,7 @@ export class UIScene extends Phaser.Scene {
     const bannerW = Math.min(310, w - 24);
     const bg = this.add.rectangle(0, 0, bannerW, 34, 0xff007f, 0.95)
       .setStrokeStyle(2, 0xffffff);
-
-    const txt = this.add.text(0, 0, '🎧 Tippe hier für Sound & Beats!', {
+    const txt = this.add.text(0, 0, '🎧 Tippe hier für Goa- & Psytrance-Beats!', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '12px',
       color: '#ffffff',
@@ -143,100 +142,77 @@ export class UIScene extends Phaser.Scene {
       SoundEngine.getInstance().unlockAudio();
       this.soundBanner.setVisible(false);
       this.soundBtnText.setText('🔊');
-      this.showToast('🔊 Party-Sound aktiviert!');
+      this.showToast('🔊 Goa- & Psytrance-Sound aktiviert!');
     });
 
     this.input.on('pointerdown', () => {
       if (this.soundBanner && this.soundBanner.visible) {
         SoundEngine.getInstance().unlockAudio();
         this.soundBanner.setVisible(false);
+        this.soundBtnText.setText('🔊');
       }
     });
   }
 
   // --- 2. RESPONSIVE TOP BAR HUD ---
   private setupTopHUD(): void {
+    const { w } = this.getViewport();
     this.hudContainer = this.add.container(0, 0).setDepth(100);
 
-    this.topHeaderBg = this.add.rectangle(0, 0, 100, 70, 0x0a0614, 0.95)
-      .setStrokeStyle(2, 0x4d396d);
+    // Dark semi-transparent header bar
+    this.topHeaderBg = this.add.rectangle(w / 2, 28, w, 56, 0x080412, 0.94)
+      .setStrokeStyle(1.5, 0x3d235c);
+    this.hudContainer.add(this.topHeaderBg);
 
-    this.zoneText = this.add.text(0, 0, '🧌 Party-Hub', {
-      fontFamily: 'Outfit, sans-serif',
-      fontSize: '13px',
-      color: '#00ffcc',
-      fontStyle: 'bold'
-    }).setOrigin(0, 0.5);
-
-    this.progressBarBg = this.add.rectangle(0, 0, 90, 16, 0x1f1730)
-      .setStrokeStyle(1.5, 0x7a5a9e);
-
-    this.progressBarFill = this.add.rectangle(0, 0, 0, 14, 0xff007f)
-      .setOrigin(0, 0.5);
-
-    this.progressLabel = this.add.text(0, 0, '0%', {
+    // Current Zone Pill
+    const zonePill = this.add.rectangle(60, 20, 100, 24, 0x1f1438, 0.9)
+      .setStrokeStyle(1.2, 0x00ffcc);
+    this.zoneText = this.add.text(60, 20, '🧌 Party-Hub', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '12px',
-      color: '#ff99dd',
+      color: '#00ffcc',
       fontStyle: 'bold'
-    }).setOrigin(0, 0.5);
-
-    this.inventoryContainer = this.add.container(0, 0);
-
-    this.questBtnContainer = this.createHeaderButton('📜 Quests', () => this.toggleQuestModal());
-    this.craftBtnContainer = this.createHeaderButton('🔨 Bauen', () => this.toggleCraftingModal());
-    
-    // Sound Button
-    this.soundBtnContainer = this.add.container(0, 0);
-    const sndBg = this.add.circle(0, 0, 16, 0x221a36, 0.95)
-      .setStrokeStyle(1.5, 0x00ffcc);
-
-    this.soundBtnText = this.add.text(0, 0, SoundEngine.getInstance().getMuted() ? '🔇' : '🔊', {
-      fontFamily: 'Outfit, sans-serif',
-      fontSize: '16px',
-      color: '#ffffff'
     }).setOrigin(0.5);
+    this.hudContainer.add([zonePill, this.zoneText]);
 
-    this.soundBtnContainer.add([sndBg, this.soundBtnText]);
-    this.soundBtnContainer.setSize(36, 36);
-    this.soundBtnContainer.setInteractive({ useHandCursor: true });
-    this.soundBtnContainer.on('pointerdown', () => this.toggleSound());
-
-    this.hudContainer.add([
-      this.topHeaderBg,
-      this.zoneText,
-      this.progressBarBg,
-      this.progressBarFill,
-      this.progressLabel,
-      this.inventoryContainer,
-      this.questBtnContainer,
-      this.craftBtnContainer,
-      this.soundBtnContainer
-    ]);
-  }
-
-  private createHeaderButton(text: string, onClick: () => void): Phaser.GameObjects.Container {
-    const container = this.add.container(0, 0);
-    const bg = this.add.rectangle(0, 0, 80, 28, 0x261a40)
-      .setStrokeStyle(1.5, 0x8a45d0);
-
-    const lbl = this.add.text(0, 0, text, {
+    // Party Progress Bar
+    const barW = Math.min(140, w * 0.35);
+    const barX = w - barW / 2 - 14;
+    this.progressBarBg = this.add.rectangle(barX, 20, barW, 16, 0x160f26, 0.9)
+      .setStrokeStyle(1.2, 0xff007f);
+    this.progressBarFill = this.add.rectangle(barX - barW / 2 + 1, 20, 2, 12, 0xff007f).setOrigin(0, 0.5);
+    this.progressLabel = this.add.text(barX + barW / 2 + 6, 20, '0%', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '11px',
       color: '#ffffff',
       fontStyle: 'bold'
+    }).setOrigin(0, 0.5);
+    this.hudContainer.add([this.progressBarBg, this.progressBarFill, this.progressLabel]);
+
+    // Quick Material Counters
+    this.inventoryContainer = this.add.container(14, 44);
+    this.hudContainer.add(this.inventoryContainer);
+
+    // Action / Menu Buttons (Quests, Crafting, Sound)
+    this.soundBtnContainer = this.createPillButton(w - 24, 44, '🔊', 0x3a1d52, () => this.toggleSound());
+    this.soundBtnText = this.soundBtnContainer.getAt(1) as Phaser.GameObjects.Text;
+    this.hudContainer.add(this.soundBtnContainer);
+  }
+
+  private createPillButton(x: number, y: number, text: string, bgColor: number, callback: () => void): Phaser.GameObjects.Container {
+    const container = this.add.container(x, y);
+    const bg = this.add.circle(0, 0, 13, bgColor, 0.9)
+      .setStrokeStyle(1.2, 0x00ffcc)
+      .setInteractive({ useHandCursor: true });
+
+    const txt = this.add.text(0, 0, text, {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: '12px',
+      color: '#ffffff'
     }).setOrigin(0.5);
 
-    container.add([bg, lbl]);
-    container.setSize(80, 28);
-    container.setInteractive({ useHandCursor: true });
-
-    container.on('pointerdown', () => {
-      SoundEngine.getInstance().playPickup();
-      onClick();
-    });
-    container.on('pointerover', () => bg.setFillStyle(0x3e2868));
-    container.on('pointerout', () => bg.setFillStyle(0x261a40));
+    bg.on('pointerdown', () => callback());
+    container.add([bg, txt]);
 
     return container;
   }
@@ -287,7 +263,7 @@ export class UIScene extends Phaser.Scene {
     const sound = SoundEngine.getInstance();
     const isMuted = sound.toggleMute();
     this.soundBtnText.setText(isMuted ? '🔇' : '🔊');
-    this.showToast(isMuted ? '🔇 Ton stummgeschaltet' : '🔊 Ton aktiviert (Party-Beats an!)');
+    this.showToast(isMuted ? '🔇 Ton stummgeschaltet' : '🔊 Goa- & Psytrance-Sound aktiviert!');
     if (this.soundBanner) this.soundBanner.setVisible(false);
   }
 

@@ -80,13 +80,13 @@ Reise durch die Teleport-Portale zu den Zonen, hilf deinen Freunden bei ihren Qu
 
 - **[Phaser 3](https://phaser.io/)** (v3.88+) – 2D Canvas & WebGL Game Engine mit dynamischem Resize & Pixel-Art-Pipeline.
 - **TypeScript & Vite** – Typensichere Codebasis und blitzschnelle Build-Pipeline.
-- **Web Audio API Sound-Synthesizer** – Mehrspurige Chiptune/Synthwave-Engine mit beat-synchronem Layering:
-  - 🥁 *Drums & Hi-Hats* (Basis-Rhythmus)
-  - 🎸 *Ollis Bassline* (Freigeschaltet nach Ollis Quest)
-  - 🎹 *Leanders Lead-Synth* (Freigeschaltet nach Leanders Quest)
-  - ✨ *Candys Arpeggio-Synth* (Freigeschaltet nach Candys Quest)
-  - 🌿 *Hennings Dub/Reggae-Chords* (Freigeschaltet nach Hennings Quest)
-  - 🎺 *Geburtstags-Fanfare & Finale-Akkorde* (Beim Platzieren des Kuchens)
+- **Web Audio API Psytrance & Goa Synthesizer** – Mehrspurige 140 BPM Goa/Psytrance-Engine mit dynamischem Layering:
+  - 🥁 *Psy Kick & Offbeat Hi-Hats* (4-on-the-floor Punch & Sizzling 16th Shaker)
+  - 🎸 *Ollis Rolling Psy-Bassline* (Klassische 16tel-Rolling-Bassline „K-B-B-B“ mit 24dB Resonanzfilter)
+  - 🎹 *Leanders Goa Synth Lead* (Hypnotische orientalisch-phrygische Goa-Melodien mit Echo-Delay)
+  - ✨ *Candys Psy Laser-Zaps & Crystal-Arps* (Resonante Zaps & glitzernde High-Frequency-Arpeggios)
+  - 🌿 *Hennings Shamanic Dub-Psy Chords* (Atmosphärische Dub-Chords & Tape-Delay Resonanzen)
+  - 🎺 *Grand Goa Finale Euphoria Drop* (Vollgas-Goa-Trance & triumphale Geburtstags-Fanfare)
 - **LocalStorage & JSON SaveSystem** – Automatisches Speichern des Spielstands sowie JSON-Export/Import.
 - **Open Graph & Twitter Cards** – Rich Media Vorschaukarten für WhatsApp, iMessage, Discord, Twitter/X & Co.
 
