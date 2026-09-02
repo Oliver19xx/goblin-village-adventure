@@ -1,7 +1,7 @@
 /**
  * Web Audio API procedural synthesizer for multi-track chiptune & techno beats.
  * Features dynamic layer toggling as Valentin recruits friends and upgrades the party.
- * Includes mobile audio context unlocking (iOS / Android touch resume).
+ * Includes iOS & Android Web Audio unlocking with silent HTML5 audio bridge.
  */
 export class SoundEngine {
   private static instance: SoundEngine;
@@ -9,6 +9,7 @@ export class SoundEngine {
   private isMuted: boolean = false;
   private isPlaying: boolean = false;
   private timerId: number | null = null;
+  private isUnlocked: boolean = false;
   
   // Track layers
   public enableBass: boolean = false;     // Olli's layer
@@ -19,6 +20,9 @@ export class SoundEngine {
   private currentStep: number = 0;
   private tempo: number = 126; // BPM
 
+  // Silent 1-second WAV to force iOS Safari into media playback mode
+  private silentAudio: HTMLAudioElement | null = null;
+
   public static getInstance(): SoundEngine {
     if (!SoundEngine.instance) {
       SoundEngine.instance = new SoundEngine();
@@ -26,8 +30,27 @@ export class SoundEngine {
     return SoundEngine.instance;
   }
 
-  public initContext(): void {
-    if (!this.ctx) {
+  constructor() {
+    this.setupSilentAudio();
+  }
+
+  private setupSilentAudio(): void {
+    if (typeof document !== 'undefined') {
+      try {
+        const audio = document.createElement('audio');
+        audio.setAttribute('x-webkit-airplay', 'deny');
+        audio.setAttribute('preload', 'auto');
+        audio.setAttribute('loop', 'true');
+        audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+        this.silentAudio = audio;
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  public initContext(): AudioContext | null {
+    if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
@@ -36,13 +59,21 @@ export class SoundEngine {
     if (this.ctx && (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted')) {
       this.ctx.resume().catch(() => {});
     }
+    return this.ctx;
   }
 
   /**
-   * Unlocks iOS & Android Web Audio by playing a 1-sample silent buffer on direct touch.
+   * Unlocks iOS & Android Web Audio by playing silent HTML5 audio and resuming AudioContext.
    */
   public unlockAudio(): void {
     this.initContext();
+
+    // 1. Play silent HTML5 audio (forces iOS out of ambient mute)
+    if (this.silentAudio) {
+      this.silentAudio.play().catch(() => {});
+    }
+
+    // 2. Resume & tick AudioContext
     if (this.ctx) {
       if (this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') {
         this.ctx.resume().catch(() => {});
@@ -57,9 +88,16 @@ export class SoundEngine {
         // ignore
       }
     }
+
+    this.isUnlocked = true;
+
     if (!this.isMuted) {
       this.startMusic();
     }
+  }
+
+  public getIsUnlocked(): boolean {
+    return this.isUnlocked && this.ctx !== null && this.ctx.state === 'running';
   }
 
   public startMusic(): void {
@@ -224,7 +262,7 @@ export class SoundEngine {
   public playPickup(): void {
     if (this.isMuted) return;
     this.unlockAudio();
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime;
     this.playSynthNote(t, 587.33, 0.08, 'sine', 0.18);
     this.playSynthNote(t + 0.07, 880.00, 0.12, 'sine', 0.18);
@@ -233,7 +271,7 @@ export class SoundEngine {
   public playTalk(): void {
     if (this.isMuted) return;
     this.unlockAudio();
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime;
     const pitch = 320 + Math.random() * 260;
     this.playSynthNote(t, pitch, 0.06, 'triangle', 0.12);
@@ -242,7 +280,7 @@ export class SoundEngine {
   public playCraft(): void {
     if (this.isMuted) return;
     this.unlockAudio();
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime;
     this.playSynthNote(t, 330, 0.08, 'square', 0.14);
     this.playSynthNote(t + 0.09, 440, 0.08, 'square', 0.14);
@@ -252,7 +290,7 @@ export class SoundEngine {
   public playWarp(): void {
     if (this.isMuted) return;
     this.unlockAudio();
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -270,7 +308,7 @@ export class SoundEngine {
   public playQuestComplete(): void {
     if (this.isMuted) return;
     this.unlockAudio();
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime;
     const notes = [440, 554.37, 659.25, 880];
     notes.forEach((freq, idx) => {
@@ -281,7 +319,7 @@ export class SoundEngine {
   public playBirthdayFanfare(): void {
     if (this.isMuted) return;
     this.unlockAudio();
-    if (!this.ctx) return;
+    if (!this.ctx || this.ctx.state !== 'running') return;
     const t = this.ctx.currentTime;
     const fanfare = [
       { f: 392, d: 0.15, p: 0 },
