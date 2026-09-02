@@ -18,8 +18,8 @@ export class UIScene extends Phaser.Scene {
   private questBtnContainer!: Phaser.GameObjects.Container;
   private craftBtnContainer!: Phaser.GameObjects.Container;
 
-  // Sound Unlock Banner (For mobile autoplay policy)
-  private soundBanner!: Phaser.GameObjects.Container;
+  // Start Screen Overlay (Guaranteed audio unlock on center tap)
+  private startScreenContainer!: Phaser.GameObjects.Container;
 
   // Modals & Panels
   private dialogueBox!: Phaser.GameObjects.Container;
@@ -58,10 +58,10 @@ export class UIScene extends Phaser.Scene {
     const state = GameState.getInstance();
 
     this.setupTopHUD();
-    this.setupSoundBanner();
     this.setupContainers();
     this.setupToast();
     this.setupMobileControls();
+    this.setupStartScreen();
 
     // Listen to screen resize & orientation change
     this.scale.on('resize', this.handleResize, this);
@@ -93,8 +93,8 @@ export class UIScene extends Phaser.Scene {
 
     // Check debug URL params for UI (delayed slightly for exact canvas resolution)
     const params = new URLSearchParams(window.location.search);
-    const modal = params.get('modal');
-    const dialogue = params.get('dialogue');
+    const modal = params.get('ui_modal');
+    const dialogue = params.get('ui_dialogue');
     const demo = params.get('demo');
 
     this.time.delayedCall(60, () => {
@@ -119,39 +119,98 @@ export class UIScene extends Phaser.Scene {
     this.finaleModal = this.add.container(w / 2, h / 2).setDepth(300).setVisible(false);
   }
 
-  // --- 1. SOUND BANNER FOR MOBILE AUTOPLAY UNLOCK ---
-  private setupSoundBanner(): void {
-    const { w } = this.getViewport();
-    this.soundBanner = this.add.container(w / 2, 85).setDepth(260);
+  // --- 1. START SCREEN OVERLAY (Center Tap unlocks Web Audio 100% reliably) ---
+  private setupStartScreen(): void {
+    const { w, h, isPortrait } = this.getViewport();
+    this.startScreenContainer = this.add.container(w / 2, h / 2).setDepth(500);
 
-    const bannerW = Math.min(310, w - 24);
-    const bg = this.add.rectangle(0, 0, bannerW, 34, 0xff007f, 0.95)
-      .setStrokeStyle(2, 0xffffff);
-    const txt = this.add.text(0, 0, '🎧 Tippe hier für Goa- & Psytrance-Beats!', {
+    // Fullscreen interactive dark backdrop
+    const backdrop = this.add.rectangle(0, 0, w * 3, h * 3, 0x0a0414, 0.86)
+      .setInteractive({ useHandCursor: true });
+
+    // Glass Card in center
+    const cardW = Math.min(360, w - 28);
+    const cardH = isPortrait ? 290 : 230;
+    const card = this.add.rectangle(0, 0, cardW, cardH, 0x160a29, 0.95)
+      .setStrokeStyle(2.5, 0xff007f);
+
+    // Title
+    const title = this.add.text(0, -cardH / 2 + 34, '🧌 VALENTINS GOBLIN-RAVE 🧌', {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: isPortrait ? '15px' : '17px',
+      color: '#00ffff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // Subtitle
+    const subtitle = this.add.text(0, -cardH / 2 + 60, 'Valentins 35. Geburtstags-Odyssee', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '12px',
+      color: '#ffcc00',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    // Big glowing START BUTTON in center
+    const btnW = Math.min(250, cardW - 36);
+    const btnH = 54;
+    const btnContainer = this.add.container(0, 8);
+
+    const btnBg = this.add.rectangle(0, 0, btnW, btnH, 0xff007f, 1)
+      .setStrokeStyle(3, 0x00ffff)
+      .setInteractive({ useHandCursor: true });
+
+    const btnTxt = this.add.text(0, 0, '▶  SPIEL STARTEN  🎧', {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: '16px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    this.soundBanner.add([bg, txt]);
-    this.soundBanner.setSize(bannerW, 34);
-    this.soundBanner.setInteractive({ useHandCursor: true });
+    btnContainer.add([btnBg, btnTxt]);
 
-    this.soundBanner.on('pointerdown', () => {
-      SoundEngine.getInstance().unlockAudio();
-      this.soundBanner.setVisible(false);
-      this.soundBtnText.setText('🔊');
-      this.showToast('🔊 Goa- & Psytrance-Sound aktiviert!');
+    // Gentle pulse animation on start button
+    this.tweens.add({
+      targets: btnContainer,
+      scaleX: 1.04,
+      scaleY: 1.04,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
     });
 
-    this.input.on('pointerdown', () => {
-      if (this.soundBanner && this.soundBanner.visible) {
-        SoundEngine.getInstance().unlockAudio();
-        this.soundBanner.setVisible(false);
+    // Sound notice below button
+    const hintTxt = this.add.text(0, cardH / 2 - 32, '🎧 Tippe hier, um mit Sound zu starten!', {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: '11px',
+      color: '#a0a0c0'
+    }).setOrigin(0.5);
+
+    const onStartGame = () => {
+      SoundEngine.getInstance().unlockAudio();
+      SoundEngine.getInstance().startMusic();
+      SoundEngine.getInstance().playPickup();
+      if (this.soundBtnText) {
         this.soundBtnText.setText('🔊');
       }
-    });
+
+      // Smooth fade out of start screen
+      this.tweens.add({
+        targets: this.startScreenContainer,
+        alpha: 0,
+        duration: 200,
+        onComplete: () => {
+          this.startScreenContainer.setVisible(false);
+          this.showToast('🔊 Goa- & Psytrance-Sound aktiviert!');
+        }
+      });
+    };
+
+    backdrop.on('pointerdown', onStartGame);
+    btnBg.on('pointerdown', onStartGame);
+    card.setInteractive({ useHandCursor: true }).on('pointerdown', onStartGame);
+
+    this.startScreenContainer.add([backdrop, card, title, subtitle, btnContainer, hintTxt]);
   }
 
   // --- 2. RESPONSIVE TOP BAR HUD ---
@@ -294,7 +353,6 @@ export class UIScene extends Phaser.Scene {
     const isMuted = sound.toggleMute();
     this.soundBtnText.setText(isMuted ? '🔇' : '🔊');
     this.showToast(isMuted ? '🔇 Ton stummgeschaltet' : '🔊 Goa- & Psytrance-Sound aktiviert!');
-    if (this.soundBanner) this.soundBanner.setVisible(false);
   }
 
   // --- 3. DYNAMIC RESPONSIVE DIALOGUE SYSTEM (STRICT CONTAINMENT) ---
@@ -985,8 +1043,8 @@ export class UIScene extends Phaser.Scene {
       }
     }
 
-    if (this.soundBanner) {
-      this.soundBanner.setPosition(w / 2, isPortrait ? 90 : 70);
+    if (this.startScreenContainer) {
+      this.startScreenContainer.setPosition(w / 2, h / 2);
     }
 
     if (this.toastContainer) {
