@@ -11,6 +11,8 @@ export class GameState extends Phaser.Events.EventEmitter {
   public craftedUpgrades: Set<string> = new Set();
   public collectedItemIds: Set<string> = new Set();
   public birthdayFinaleActive: boolean = false;
+  public isCakeBaked: boolean = false;
+  public isCakePlaced: boolean = false;
 
   public quests: Map<string, Quest> = new Map();
   public craftingRecipes: CraftingRecipe[] = [];
@@ -94,13 +96,14 @@ export class GameState extends Phaser.Events.EventEmitter {
       {
         id: 'upgrade_lights',
         name: 'Bunte Lichterketten & Discokugel',
-        description: 'Tausende glitzernde Lämpchen erhellen Valentins Party-Lager.',
+        description: 'Tausende glitzernde Lämpchen. Braucht Candy für die Neon-Lichtshow.',
         icon: 'prop_string_lights',
         category: 'decoration',
         costs: [
           { itemId: 'scrap', amount: 3 },
           { itemId: 'glowstick', amount: 3 }
         ],
+        requiredFriendId: 'candy',
         built: false,
         unlockText: 'Die Party-Lichterketten strahlen jetzt in vollem Glanz!'
       },
@@ -149,7 +152,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       {
         id: 'upgrade_cake',
         name: 'Der Gigantische Geburtstagskuchen 🎂',
-        description: 'Das krönende Meisterwerk für Valentins Geburtstag! Startet das große Rave-Finale.',
+        description: 'Das krönende Meisterwerk für Valentins Geburtstag! Kann direkt an der Werkbank gebacken werden.',
         icon: 'prop_birthday_cake',
         category: 'finale',
         costs: [
@@ -158,7 +161,7 @@ export class GameState extends Phaser.Events.EventEmitter {
           { itemId: 'glowstick', amount: 4 }
         ],
         built: false,
-        unlockText: 'ALLES GUTE ZUM GEBURTSTAG, VALENTIN! DIE PARTY DES JAHRHUNDERTS BEGINNT!'
+        unlockText: '🎂 Kuchen erfolgreich gebacken! Bringe ihn zum Partytisch in die Mitte!'
       }
     ];
   }
@@ -206,7 +209,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     const recipe = this.craftingRecipes.find(r => r.id === recipeId);
     if (!recipe || recipe.built) return false;
 
-    // Check friend requirement
+    // Check friend requirement (Cake does NOT require friends)
     if (recipe.requiredFriendId && !this.isFriendRecruited(recipe.requiredFriendId)) {
       return false;
     }
@@ -226,13 +229,21 @@ export class GameState extends Phaser.Events.EventEmitter {
     recipe.built = true;
     this.craftedUpgrades.add(recipeId);
     SoundEngine.getInstance().playCraft();
-    this.emit('upgrade_crafted', recipe);
 
-    // Check if birthday cake was built
     if (recipeId === 'upgrade_cake') {
-      this.triggerBirthdayFinale();
+      this.isCakeBaked = true;
+      this.emit('cake_baked');
     }
 
+    this.emit('upgrade_crafted', recipe);
+    return true;
+  }
+
+  public placeCake(): boolean {
+    if (!this.isCakeBaked || this.isCakePlaced) return false;
+    this.isCakePlaced = true;
+    this.triggerBirthdayFinale();
+    this.emit('cake_placed');
     return true;
   }
 
@@ -271,10 +282,19 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   public getPartyProgress(): number {
-    // 3 friends (20% each) + 5 upgrades (8% each) = 100%
-    const friendScore = (this.recruitedFriends.size / 3) * 60;
-    const upgradeScore = (this.craftedUpgrades.size / this.craftingRecipes.length) * 40;
-    return Math.min(100, Math.round(friendScore + upgradeScore));
+    // 3 friends (20% each = 60%) + 4 upgrades (7.5% each = 30%) + cake baked (5%) + cake placed (5%) = 100%
+    let progress = 0;
+    progress += this.recruitedFriends.size * 20;
+
+    const baseUpgrades = ['upgrade_lights', 'upgrade_sound', 'upgrade_chill', 'upgrade_bar'];
+    baseUpgrades.forEach(u => {
+      if (this.craftedUpgrades.has(u)) progress += 7.5;
+    });
+
+    if (this.isCakeBaked) progress += 5;
+    if (this.isCakePlaced) progress += 5;
+
+    return Math.min(100, Math.round(progress));
   }
 
   public triggerBirthdayFinale(): void {
@@ -290,6 +310,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.craftedUpgrades.clear();
     this.collectedItemIds.clear();
     this.birthdayFinaleActive = false;
+    this.isCakeBaked = false;
+    this.isCakePlaced = false;
     SoundEngine.getInstance().enableBass = false;
     SoundEngine.getInstance().enableLead = false;
     SoundEngine.getInstance().enableArp = false;

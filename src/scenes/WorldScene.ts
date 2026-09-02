@@ -34,7 +34,8 @@ export class WorldScene extends Phaser.Scene {
 
   private interactPrompt!: Phaser.GameObjects.Container;
   private promptText!: Phaser.GameObjects.Text;
-  private activeInteractable: { type: 'npc' | 'item' | 'portal' | 'workbench'; data: unknown } | null = null;
+  private promptBg!: Phaser.GameObjects.Rectangle;
+  private activeInteractable: { type: 'npc' | 'item' | 'portal' | 'workbench' | 'party_table'; data: unknown } | null = null;
 
   private zoneAtmosphereParticles?: Phaser.GameObjects.Particles.ParticleEmitter;
   private discoLights: Phaser.GameObjects.Arc[] = [];
@@ -193,13 +194,34 @@ export class WorldScene extends Phaser.Scene {
     wbContainer.add([wbBg, wbTxt]);
     this.hubUpgrades.push(wbContainer);
 
+    // Central Party Table (Cake spot)
+    const state = GameState.getInstance();
+    const table = this.obstacles.create(480, 320, 'prop_party_table');
+    table.setDepth(6).refreshBody();
+
+    const tblContainer = this.add.container(480, 288).setDepth(12);
+    const tblTxt = this.add.text(0, 0, state.isCakePlaced ? '🎂 GEBURTSTAGSKUCHEN' : '🎉 PARTYTISCH', {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: '10px',
+      color: state.isCakePlaced ? '#ffd700' : '#00ffcc',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    const tblBg = this.add.rectangle(0, 0, tblTxt.width + 12, tblTxt.height + 6, 0x0a0614, 0.9)
+      .setStrokeStyle(1.2, state.isCakePlaced ? 0xffd700 : 0x00ffcc, 0.6);
+    tblContainer.add([tblBg, tblTxt]);
+    this.hubUpgrades.push(table, tblContainer);
+
+    if (state.isCakePlaced) {
+      const cake = this.add.image(480, 305, 'prop_birthday_cake').setDepth(8);
+      this.hubUpgrades.push(cake);
+    }
+
     // Portals to the 3 Raves
     this.createPortal(840, 140, 'kanal', '🎧 ZUM KANAL-RAVE\n(Olli)');
     this.createPortal(840, 320, 'skatehalle', '🛹 ZUR SKATEHALLE\n(Leander)');
     this.createPortal(840, 500, 'autobahn', '🍬 ZUR AUTOBAHN-BRÜCKE\n(Candy)');
 
     // Render Friends if recruited
-    const state = GameState.getInstance();
     if (state.isFriendRecruited('olli')) {
       const olliNpc = new NPC(this, 360, 220, 'olli', '🎧 Olli', true);
       this.npcs.push(olliNpc);
@@ -447,9 +469,9 @@ export class WorldScene extends Phaser.Scene {
       this.hubUpgrades.push(bar);
     }
 
-    // 5. Giant Birthday Cake (Finale)
-    if (state.craftedUpgrades.has('upgrade_cake')) {
-      const cake = this.add.image(480, 360, 'prop_birthday_cake').setDepth(7);
+    // 5. Giant Birthday Cake (Finale) - only if cake is placed on the table!
+    if (state.isCakePlaced) {
+      const cake = this.add.image(480, 305, 'prop_birthday_cake').setDepth(8);
       this.hubUpgrades.push(cake);
     }
   }
@@ -461,40 +483,41 @@ export class WorldScene extends Phaser.Scene {
 
   private createPortal(x: number, y: number, targetZone: ZoneId, name: string): void {
     const sprite = this.add.sprite(x, y, 'prop_portal').setDepth(4);
-    
-    // Label container with border
+    this.portals.push({ targetZone, x, y, name, sprite });
+
     const container = this.add.container(x, y - 36).setDepth(12);
-    const txt = this.add.text(0, 0, name, {
+    const labelTxt = this.add.text(0, 0, name, {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '10px',
+      fontSize: '9.5px',
       color: '#00ffcc',
-      fontStyle: 'bold',
       align: 'center',
+      fontStyle: 'bold',
       lineSpacing: 2
     }).setOrigin(0.5);
 
-    const bg = this.add.rectangle(0, 0, txt.width + 14, txt.height + 8, 0x0a0614, 0.9)
+    const bgRect = this.add.rectangle(0, 0, labelTxt.width + 14, labelTxt.height + 8, 0x0a0614, 0.9)
       .setStrokeStyle(1.2, 0x00ffcc, 0.6);
 
-    container.add([bg, txt]);
-    this.portals.push({ targetZone, x, y, name, sprite });
+    container.add([bgRect, labelTxt]);
     this.hubUpgrades.push(container);
   }
 
   private spawnMaterialItem(id: string, itemId: string, x: number, y: number, name: string): void {
-    const state = GameState.getInstance();
-    const itemData = state.inventory.get(itemId);
-    const texture = itemData ? itemData.iconTexture : 'item_wood';
+    const textureMap: { [k: string]: string } = {
+      wood: 'item_wood',
+      scrap: 'item_scrap',
+      glowstick: 'item_glowstick'
+    };
 
-    const sprite = this.add.sprite(x, y, texture).setDepth(3);
-
-    // Cute floating tween
+    const sprite = this.add.sprite(x, y, textureMap[itemId] || 'item_wood').setDepth(4);
+    
     this.tweens.add({
       targets: sprite,
       y: y - 4,
-      duration: 1000 + Math.random() * 500,
+      duration: 1000 + Math.random() * 400,
       yoyo: true,
-      repeat: -1
+      repeat: -1,
+      ease: 'Sine.easeInOut'
     });
 
     this.items.push({ id, itemId, x, y, sprite, name });
@@ -504,32 +527,36 @@ export class WorldScene extends Phaser.Scene {
     const state = GameState.getInstance();
     if (state.collectedItemIds.has(id)) return;
 
-    const itemData = state.inventory.get(itemId);
-    const texture = itemData ? itemData.iconTexture : 'item_vinyl';
+    const textureMap: { [k: string]: string } = {
+      vinyl: 'item_vinyl',
+      audio_cable: 'item_audio_cable',
+      skate_wheels: 'item_skate_wheels',
+      energy_drink: 'item_energy_drink',
+      glow_syrup: 'item_glow_syrup',
+      fog_plug: 'item_fog_plug'
+    };
 
-    const sprite = this.add.sprite(x, y, texture).setDepth(3);
-    
-    // Golden pulse glow
+    const sprite = this.add.sprite(x, y, textureMap[itemId]).setDepth(4);
+
     this.tweens.add({
       targets: sprite,
-      scale: 1.25,
-      duration: 700,
+      y: y - 6,
+      duration: 800,
       yoyo: true,
-      repeat: -1
+      repeat: -1,
+      ease: 'Sine.easeInOut'
     });
 
     this.items.push({ id, itemId, x, y, sprite, name });
   }
 
-  private promptBg!: Phaser.GameObjects.Rectangle;
-
   private setupInteractPrompt(): void {
-    this.interactPrompt = this.add.container(0, 0).setDepth(120).setVisible(false);
-    
-    this.promptBg = this.add.rectangle(0, 0, 160, 24, 0x100820, 0.95);
-    this.promptBg.setStrokeStyle(1.5, 0x00ffcc);
+    this.interactPrompt = this.add.container(0, 0).setDepth(200).setVisible(false);
 
-    this.promptText = this.add.text(0, 0, '[E] Interagieren', {
+    this.promptBg = this.add.rectangle(0, 0, 160, 24, 0x0e061a, 0.92)
+      .setStrokeStyle(1.5, 0xff007f);
+
+    this.promptText = this.add.text(0, 0, '', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '11px',
       color: '#ffffff',
@@ -563,7 +590,21 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    // 2. Check NPCs (Position cleanly above quest exclamation & name tag)
+    // 2. Check Central Party Table (Cake spot in Hub center)
+    if (GameState.getInstance().currentZone === 'hub' && Phaser.Math.Distance.Between(px, py, 480, 320) < interactDist + 16) {
+      const state = GameState.getInstance();
+      this.activeInteractable = { type: 'party_table', data: null };
+      if (!state.isCakeBaked) {
+        this.showPrompt(480, 260, '🎂 [E] Partytisch (Kuchen erst backen!)');
+      } else if (!state.isCakePlaced) {
+        this.showPrompt(480, 260, '✨ [E] Geburtstagskuchen aufstellen! 🎂');
+      } else {
+        this.showPrompt(480, 260, '🪩 [E] Party-Finale feiern!');
+      }
+      return;
+    }
+
+    // 3. Check NPCs (Position cleanly above quest exclamation & name tag)
     for (const npc of this.npcs) {
       if (Phaser.Math.Distance.Between(px, py, npc.x, npc.y) < interactDist) {
         this.activeInteractable = { type: 'npc', data: npc };
@@ -572,7 +613,7 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
-    // 3. Check Pickable Items
+    // 4. Check Pickable Items
     for (const item of this.items) {
       if (Phaser.Math.Distance.Between(px, py, item.x, item.y) < interactDist) {
         this.activeInteractable = { type: 'item', data: item };
@@ -581,7 +622,7 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
-    // 4. Check Portals
+    // 5. Check Portals
     for (const portal of this.portals) {
       if (Phaser.Math.Distance.Between(px, py, portal.x, portal.y) < interactDist + 10) {
         this.activeInteractable = { type: 'portal', data: portal };
@@ -607,6 +648,7 @@ export class WorldScene extends Phaser.Scene {
     const uiScene = this.scene.get('UIScene') as unknown as {
       openDialogue: (dialogueId: string) => void;
       openCraftingMenu: () => void;
+      openFinaleModal: () => void;
       showToast: (msg: string) => void;
     };
 
@@ -614,6 +656,18 @@ export class WorldScene extends Phaser.Scene {
       case 'workbench':
         uiScene.openCraftingMenu();
         break;
+
+      case 'party_table': {
+        if (!state.isCakeBaked) {
+          uiScene.showToast('🔨 Gehe zur Werkbank (oben links), um den Kuchen zu backen!');
+          SoundEngine.getInstance().playPickup();
+        } else if (!state.isCakePlaced) {
+          this.animateCakePlacement();
+        } else {
+          uiScene.openFinaleModal();
+        }
+        break;
+      }
 
       case 'npc': {
         const npc = this.activeInteractable.data as NPC;
@@ -732,5 +786,81 @@ export class WorldScene extends Phaser.Scene {
       quantity: 15,
       frequency: 200
     }).setDepth(50);
+  }
+
+  public animateCakePlacement(): void {
+    const state = GameState.getInstance();
+    const uiScene = this.scene.get('UIScene') as unknown as {
+      openFinaleModal: () => void;
+      showToast: (msg: string) => void;
+    };
+
+    // 1. Move Player smoothly in front of the table
+    this.player.setPosition(480, 365);
+    this.player.isDancing = true;
+
+    // 2. Place cake sprite on table with a bounce
+    const cake = this.add.image(480, 305, 'prop_birthday_cake').setDepth(8).setScale(0);
+    this.zoneObjects.push(cake);
+    this.hubUpgrades.push(cake);
+
+    this.tweens.add({
+      targets: cake,
+      scale: 1.25,
+      duration: 500,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: cake,
+          scale: 1.0,
+          duration: 200
+        });
+      }
+    });
+
+    // 3. Mark cake placed and trigger sound & state
+    state.placeCake();
+    uiScene.showToast('🎂 KUCHEN PLATZIERT! DIE PARTY DES JAHRHUNDERTS BEGINNT!');
+
+    // 4. Sparkles and candle glow rising from cake
+    const cakeSparkles = this.add.particles(480, 295, 'particle_sparkle', {
+      lifespan: 1000,
+      speed: { min: 20, max: 60 },
+      scale: { start: 1.2, end: 0 },
+      quantity: 4,
+      frequency: 100
+    }).setDepth(50);
+    this.zoneObjects.push(cakeSparkles);
+
+    // 5. Confetti celebration
+    this.triggerFinaleCelebration();
+
+    // 6. Make all friends dance & rejoice with floating emotes
+    this.npcs.forEach((npc, index) => {
+      npc.isDancing = true;
+      this.time.delayedCall(index * 250, () => {
+        const cheerTxt = this.add.text(npc.x, npc.y - 40, '🎉 HAPPY BIRTHDAY!', {
+          fontFamily: 'Outfit, sans-serif',
+          fontSize: '12px',
+          color: '#ffd700',
+          fontStyle: 'bold',
+          stroke: '#000000',
+          strokeThickness: 3
+        }).setOrigin(0.5).setDepth(150);
+
+        this.tweens.add({
+          targets: cheerTxt,
+          y: cheerTxt.y - 25,
+          alpha: 0,
+          duration: 1600,
+          onComplete: () => cheerTxt.destroy()
+        });
+      });
+    });
+
+    // 7. Open the Finale Modal after celebratory animations
+    this.time.delayedCall(1600, () => {
+      uiScene.openFinaleModal();
+    });
   }
 }

@@ -34,7 +34,9 @@ export class SaveSystem {
       craftedUpgrades: upgradesObj,
       completedQuests: questsObj,
       pickedItems: itemsObj,
-      birthdayFinaleTriggered: state.birthdayFinaleActive
+      birthdayFinaleTriggered: state.birthdayFinaleActive,
+      isCakeBaked: state.isCakeBaked,
+      isCakePlaced: state.isCakePlaced
     };
 
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -97,6 +99,9 @@ export class SaveSystem {
       if (data.birthdayFinaleTriggered) {
         state.birthdayFinaleActive = true;
       }
+
+      state.isCakeBaked = !!data.isCakeBaked;
+      state.isCakePlaced = !!data.isCakePlaced;
 
       state.emit('inventory_changed');
       state.emit('quest_updated');

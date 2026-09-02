@@ -796,6 +796,34 @@ export class TextureGenerator {
       ctx.fillText('WARP', 8, 28);
       scene.textures.addCanvas('prop_portal', canvas);
     }
+
+    // 9. Festive Party Center Table (56x32)
+    {
+      const { canvas, ctx } = this.createCanvas(56, 32);
+      // Wooden legs
+      ctx.fillStyle = '#4a2c16';
+      ctx.fillRect(6, 16, 6, 14);
+      ctx.fillRect(44, 16, 6, 14);
+
+      // Purple & Gold Festive Tablecloth
+      ctx.fillStyle = '#2d1447';
+      ctx.fillRect(2, 6, 52, 18);
+      ctx.fillStyle = '#491d75';
+      ctx.fillRect(2, 6, 52, 4);
+
+      // Neon fringe trim
+      ctx.fillStyle = '#ff007f';
+      for (let x = 2; x < 54; x += 4) {
+        ctx.fillRect(x, 22, 3, 3);
+      }
+
+      // Golden Centerpiece Platter
+      ctx.fillStyle = '#ffd700';
+      ctx.fillRect(16, 4, 24, 3);
+      ctx.fillRect(24, 7, 8, 2);
+
+      scene.textures.addCanvas('prop_party_table', canvas);
+    }
   }
 
   // --- ITEM ICONS ---

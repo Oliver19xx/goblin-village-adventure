@@ -7,7 +7,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
   private questIcon?: Phaser.GameObjects.Sprite;
   private nameLabelContainer?: Phaser.GameObjects.Container;
   private danceTimer: number = 0;
-  private isDancing: boolean = false;
+  public isDancing: boolean = false;
 
   constructor(
     scene: Phaser.Scene,

@@ -59,4 +59,6 @@ export interface SaveData {
   completedQuests: { [questId: string]: boolean };
   pickedItems: { [itemId: string]: boolean };
   birthdayFinaleTriggered: boolean;
+  isCakeBaked?: boolean;
+  isCakePlaced?: boolean;
 }
