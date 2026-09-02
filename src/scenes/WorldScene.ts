@@ -176,13 +176,18 @@ export class WorldScene extends Phaser.Scene {
     // Workbench / Crafting Table
     const bench = this.obstacles.create(220, 240, 'tile_wall');
     bench.setTint(0xdaa520).setDepth(5).refreshBody();
-    this.add.text(220, 205, '🔨 WERKBANK', {
+
+    const wbContainer = this.add.container(220, 205).setDepth(12);
+    const wbTxt = this.add.text(0, 0, '🔨 WERKBANK', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '11px',
+      fontSize: '10px',
       color: '#ffd700',
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      padding: { x: 4, y: 2 }
-    }).setOrigin(0.5).setDepth(12);
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    const wbBg = this.add.rectangle(0, 0, wbTxt.width + 12, wbTxt.height + 6, 0x0a0614, 0.9)
+      .setStrokeStyle(1.2, 0xffd700, 0.6);
+    wbContainer.add([wbBg, wbTxt]);
+    this.hubUpgrades.push(wbContainer);
 
     // Portals to the 3 Raves
     this.createPortal(840, 140, 'kanal', '🎧 ZUM KANAL-RAVE\n(Olli)');
@@ -453,18 +458,23 @@ export class WorldScene extends Phaser.Scene {
   private createPortal(x: number, y: number, targetZone: ZoneId, name: string): void {
     const sprite = this.add.sprite(x, y, 'prop_portal').setDepth(4);
     
-    // Label
-    const text = this.add.text(x, y - 36, name, {
+    // Label container with border
+    const container = this.add.container(x, y - 36).setDepth(12);
+    const txt = this.add.text(0, 0, name, {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '11px',
+      fontSize: '10px',
       color: '#00ffcc',
+      fontStyle: 'bold',
       align: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      padding: { x: 4, y: 2 }
-    }).setOrigin(0.5).setDepth(12);
+      lineSpacing: 2
+    }).setOrigin(0.5);
 
+    const bg = this.add.rectangle(0, 0, txt.width + 14, txt.height + 8, 0x0a0614, 0.9)
+      .setStrokeStyle(1.2, 0x00ffcc, 0.6);
+
+    container.add([bg, txt]);
     this.portals.push({ targetZone, x, y, name, sprite });
-    this.hubUpgrades.push(text);
+    this.hubUpgrades.push(container);
   }
 
   private spawnMaterialItem(id: string, itemId: string, x: number, y: number, name: string): void {
@@ -507,19 +517,22 @@ export class WorldScene extends Phaser.Scene {
     this.items.push({ id, itemId, x, y, sprite, name });
   }
 
+  private promptBg!: Phaser.GameObjects.Rectangle;
+
   private setupInteractPrompt(): void {
-    this.interactPrompt = this.add.container(0, 0).setDepth(100).setVisible(false);
+    this.interactPrompt = this.add.container(0, 0).setDepth(120).setVisible(false);
     
-    const bg = this.add.rectangle(0, 0, 160, 26, 0x111118, 0.85);
-    bg.setStrokeStyle(1.5, 0xff007f);
+    this.promptBg = this.add.rectangle(0, 0, 160, 24, 0x100820, 0.95);
+    this.promptBg.setStrokeStyle(1.5, 0x00ffcc);
 
     this.promptText = this.add.text(0, 0, '[E] Interagieren', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '12px',
-      color: '#ffffff'
+      fontSize: '11px',
+      color: '#ffffff',
+      fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    this.interactPrompt.add([bg, this.promptText]);
+    this.interactPrompt.add([this.promptBg, this.promptText]);
   }
 
   update(time: number, delta: number): void {
@@ -542,15 +555,15 @@ export class WorldScene extends Phaser.Scene {
     // 1. Check Workbench (in Hub)
     if (GameState.getInstance().currentZone === 'hub' && Phaser.Math.Distance.Between(px, py, 220, 240) < interactDist) {
       this.activeInteractable = { type: 'workbench', data: null };
-      this.showPrompt(220, 210, '[E] Werkbank öffnen');
+      this.showPrompt(220, 185, '🔨 [E] Werkbank öffnen');
       return;
     }
 
-    // 2. Check NPCs
+    // 2. Check NPCs (Position cleanly above quest exclamation & name tag)
     for (const npc of this.npcs) {
       if (Phaser.Math.Distance.Between(px, py, npc.x, npc.y) < interactDist) {
         this.activeInteractable = { type: 'npc', data: npc };
-        this.showPrompt(npc.x, npc.y - 42, `[E] Mit ${npc.displayName} sprechen`);
+        this.showPrompt(npc.x, npc.y - 54, `💬 [E] Mit ${npc.displayName} sprechen`);
         return;
       }
     }
@@ -559,7 +572,7 @@ export class WorldScene extends Phaser.Scene {
     for (const item of this.items) {
       if (Phaser.Math.Distance.Between(px, py, item.x, item.y) < interactDist) {
         this.activeInteractable = { type: 'item', data: item };
-        this.showPrompt(item.x, item.y - 20, `[E] ${item.name} aufsammeln`);
+        this.showPrompt(item.x, item.y - 24, `✨ [E] ${item.name} aufsammeln`);
         return;
       }
     }
@@ -568,7 +581,7 @@ export class WorldScene extends Phaser.Scene {
     for (const portal of this.portals) {
       if (Phaser.Math.Distance.Between(px, py, portal.x, portal.y) < interactDist + 10) {
         this.activeInteractable = { type: 'portal', data: portal };
-        this.showPrompt(portal.x, portal.y - 48, `[E] Teleportieren`);
+        this.showPrompt(portal.x, portal.y - 54, `🌀 [E] Teleportieren`);
         return;
       }
     }
@@ -577,8 +590,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private showPrompt(x: number, y: number, text: string): void {
-    this.interactPrompt.setPosition(x, y).setVisible(true);
     this.promptText.setText(text);
+    const txtW = this.promptText.width;
+    this.promptBg.setSize(txtW + 16, 24);
+    this.interactPrompt.setPosition(x, y).setVisible(true);
   }
 
   public handleInteraction(): void {

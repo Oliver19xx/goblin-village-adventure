@@ -5,7 +5,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
   public friendId: 'olli' | 'leander' | 'candy';
   public displayName: string;
   private questIcon?: Phaser.GameObjects.Sprite;
-  private nameLabel?: Phaser.GameObjects.Text;
+  private nameLabelContainer?: Phaser.GameObjects.Container;
   private danceTimer: number = 0;
   private isDancing: boolean = false;
 
@@ -29,17 +29,20 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     this.setOffset(6, 16);
     this.setDepth(9);
 
-    // Name label
-    this.nameLabel = scene.add.text(x, y - 24, displayName, {
+    // Clean framed Name label
+    this.nameLabelContainer = scene.add.container(x, y - 24).setDepth(15);
+    const nameTxt = scene.add.text(0, 0, displayName, {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '11px',
+      fontSize: '10.5px',
       color: '#ffffff',
-      backgroundColor: 'rgba(0, 0, 0, 0.65)',
-      padding: { x: 4, y: 2 }
-    }).setOrigin(0.5).setDepth(15);
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    const nameBg = scene.add.rectangle(0, 0, nameTxt.width + 12, nameTxt.height + 6, 0x0a0614, 0.88)
+      .setStrokeStyle(1, 0x8a45d0, 0.6);
+    this.nameLabelContainer.add([nameBg, nameTxt]);
 
-    // Quest indicator
-    this.questIcon = scene.add.sprite(x, y - 36, 'icon_quest_exclamation')
+    // Quest indicator (Placed above nametag)
+    this.questIcon = scene.add.sprite(x, y - 38, 'icon_quest_exclamation')
       .setOrigin(0.5)
       .setDepth(15);
 
@@ -76,16 +79,16 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     }
 
     // Keep name label & quest icon anchored
-    if (this.nameLabel) {
-      this.nameLabel.setPosition(this.x, this.y - 24);
+    if (this.nameLabelContainer) {
+      this.nameLabelContainer.setPosition(this.x, this.y - 24);
     }
     if (this.questIcon) {
-      this.questIcon.setPosition(this.x, this.y - 36);
+      this.questIcon.setPosition(this.x, this.y - 38);
     }
   }
 
   public destroy(fromScene?: boolean): void {
-    if (this.nameLabel) this.nameLabel.destroy();
+    if (this.nameLabelContainer) this.nameLabelContainer.destroy();
     if (this.questIcon) this.questIcon.destroy();
     super.destroy(fromScene);
   }

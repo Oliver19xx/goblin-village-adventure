@@ -48,8 +48,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   private getViewport(): { w: number; h: number; isPortrait: boolean } {
-    const w = this.scale.width > 0 ? this.scale.width : (window.innerWidth || 390);
-    const h = this.scale.height > 0 ? this.scale.height : (window.innerHeight || 844);
+    const w = window.innerWidth || this.scale.width || 390;
+    const h = window.innerHeight || this.scale.height || 844;
     const isPortrait = h > w || w < 600;
     return { w, h, isPortrait };
   }
@@ -91,27 +91,29 @@ export class UIScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-Q', () => this.toggleQuestModal());
     this.input.keyboard?.on('keydown-M', () => this.toggleSound());
 
-    // Check debug URL params for UI
+    // Check debug URL params for UI (delayed slightly for exact canvas resolution)
     const params = new URLSearchParams(window.location.search);
     const modal = params.get('modal');
     const dialogue = params.get('dialogue');
     const demo = params.get('demo');
 
-    if (modal === 'crafting') {
-      this.openCraftingMenu();
-    } else if (modal === 'quests') {
-      this.toggleQuestModal();
-    } else if (dialogue) {
-      this.openDialogue(dialogue);
-    } else if (demo === 'finale') {
-      this.openFinaleModal();
-    }
+    this.time.delayedCall(60, () => {
+      if (modal === 'crafting') {
+        this.openCraftingMenu();
+      } else if (modal === 'quests') {
+        this.toggleQuestModal();
+      } else if (dialogue) {
+        this.openDialogue(dialogue);
+      } else if (demo === 'finale') {
+        this.openFinaleModal();
+      }
+    });
   }
 
   private setupContainers(): void {
     const { w, h } = this.getViewport();
 
-    this.dialogueBox = this.add.container(w / 2, h - 110).setDepth(200).setVisible(false);
+    this.dialogueBox = this.add.container(w / 2, h - 140).setDepth(200).setVisible(false);
     this.craftingModal = this.add.container(w / 2, h / 2).setDepth(210).setVisible(false);
     this.questModal = this.add.container(w / 2, h / 2).setDepth(210).setVisible(false);
     this.finaleModal = this.add.container(w / 2, h / 2).setDepth(300).setVisible(false);
@@ -122,19 +124,19 @@ export class UIScene extends Phaser.Scene {
     const { w } = this.getViewport();
     this.soundBanner = this.add.container(w / 2, 85).setDepth(260);
 
-    const bannerW = Math.min(320, w - 24);
-    const bg = this.add.rectangle(0, 0, bannerW, 36, 0xff007f, 0.95)
+    const bannerW = Math.min(310, w - 24);
+    const bg = this.add.rectangle(0, 0, bannerW, 34, 0xff007f, 0.95)
       .setStrokeStyle(2, 0xffffff);
 
     const txt = this.add.text(0, 0, '🎧 Tippe hier für Sound & Beats!', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
     this.soundBanner.add([bg, txt]);
-    this.soundBanner.setSize(bannerW, 36);
+    this.soundBanner.setSize(bannerW, 34);
     this.soundBanner.setInteractive({ useHandCursor: true });
 
     this.soundBanner.on('pointerdown', () => {
@@ -186,17 +188,17 @@ export class UIScene extends Phaser.Scene {
     
     // Sound Button
     this.soundBtnContainer = this.add.container(0, 0);
-    const sndBg = this.add.circle(0, 0, 18, 0x221a36, 0.95)
-      .setStrokeStyle(2, 0x00ffcc);
+    const sndBg = this.add.circle(0, 0, 16, 0x221a36, 0.95)
+      .setStrokeStyle(1.5, 0x00ffcc);
 
     this.soundBtnText = this.add.text(0, 0, SoundEngine.getInstance().getMuted() ? '🔇' : '🔊', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '18px',
+      fontSize: '16px',
       color: '#ffffff'
     }).setOrigin(0.5);
 
     this.soundBtnContainer.add([sndBg, this.soundBtnText]);
-    this.soundBtnContainer.setSize(40, 40);
+    this.soundBtnContainer.setSize(36, 36);
     this.soundBtnContainer.setInteractive({ useHandCursor: true });
     this.soundBtnContainer.on('pointerdown', () => this.toggleSound());
 
@@ -288,7 +290,7 @@ export class UIScene extends Phaser.Scene {
     if (this.soundBanner) this.soundBanner.setVisible(false);
   }
 
-  // --- 3. DYNAMIC RESPONSIVE DIALOGUE SYSTEM ---
+  // --- 3. DYNAMIC RESPONSIVE DIALOGUE SYSTEM (STRICT CONTAINMENT) ---
   public openDialogue(nodeId: string): void {
     this.currentDialogueNodeId = nodeId;
     this.setMobileControlsVisible(false);
@@ -305,39 +307,45 @@ export class UIScene extends Phaser.Scene {
     const { w, h, isPortrait } = this.getViewport();
 
     const numOptions = node.options ? node.options.length : 0;
-    const boxW = isPortrait ? Math.min(365, w - 16) : Math.min(680, w - 24);
-    const boxH = isPortrait ? (numOptions > 1 ? 240 : 190) : 160;
+    const boxW = isPortrait ? Math.min(355, w - 20) : Math.min(680, w - 24);
+    // Give plenty of vertical space so text and stacked buttons stay completely inside
+    const boxH = isPortrait ? (numOptions > 1 ? 275 : 205) : 160;
 
-    this.dialogueBox.setPosition(w / 2, h - boxH / 2 - 10);
+    this.dialogueBox.setPosition(w / 2, h - boxH / 2 - 12);
 
     const bg = this.add.rectangle(0, 0, boxW, boxH, 0x0c0818, 0.98)
       .setStrokeStyle(2.5, 0xff007f);
 
     if (isPortrait) {
-      const portrait = this.add.sprite(-boxW / 2 + 24, -boxH / 2 + 24, `${node.speaker}_idle`).setScale(1.6);
-      const nameTxt = this.add.text(-boxW / 2 + 50, -boxH / 2 + 16, node.speakerName, {
+      // Avatar positioned with comfortable margin inside top-left
+      const portrait = this.add.sprite(-boxW / 2 + 30, -boxH / 2 + 28, `${node.speaker}_idle`).setScale(1.25);
+      const nameTxt = this.add.text(-boxW / 2 + 54, -boxH / 2 + 18, node.speakerName, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '13px',
+        fontSize: '12.5px',
         color: '#00ffcc',
         fontStyle: 'bold'
       });
 
-      const bodyTxt = this.add.text(-boxW / 2 + 14, -boxH / 2 + 50, node.text, {
+      const bodyTxt = this.add.text(-boxW / 2 + 16, -boxH / 2 + 52, node.text, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '12px',
+        fontSize: '11.5px',
         color: '#ffffff',
-        wordWrap: { width: boxW - 28 },
+        wordWrap: { width: boxW - 36 },
         lineSpacing: 3
       });
 
       this.dialogueBox.add([bg, portrait, nameTxt, bodyTxt]);
 
       if (node.options && node.options.length > 0) {
-        let optY = boxH / 2 - (numOptions > 1 ? 48 : 26);
-        const btnWidth = boxW - 24;
+        const btnWidth = boxW - 28;
+        const btnH = 34;
 
-        node.options.forEach(opt => {
-          const btnBg = this.add.rectangle(0, optY, btnWidth, 34, 0x251442)
+        node.options.forEach((opt, idx) => {
+          // Calculate optY from bottom border to guarantee 100% containment
+          const offsetFromBottom = numOptions > 1 ? (numOptions - 1 - idx) * 40 + 26 : 24;
+          const optY = boxH / 2 - offsetFromBottom;
+
+          const btnBg = this.add.rectangle(0, optY, btnWidth, btnH, 0x251442)
             .setStrokeStyle(2, 0x00ffcc)
             .setInteractive({ useHandCursor: true });
 
@@ -346,7 +354,7 @@ export class UIScene extends Phaser.Scene {
             fontSize: '11px',
             color: '#ffffff',
             fontStyle: 'bold',
-            wordWrap: { width: btnWidth - 12 },
+            wordWrap: { width: btnWidth - 14 },
             align: 'center'
           }).setOrigin(0.5);
 
@@ -361,7 +369,6 @@ export class UIScene extends Phaser.Scene {
           });
 
           this.dialogueBox.add([btnBg, btnText]);
-          optY += 38;
         });
       } else {
         this.dialogueBox.setInteractive(new Phaser.Geom.Rectangle(-boxW / 2, -boxH / 2, boxW, boxH), Phaser.Geom.Rectangle.Contains);
@@ -447,7 +454,7 @@ export class UIScene extends Phaser.Scene {
     this.setMobileControlsVisible(true);
   }
 
-  // --- 4. DYNAMIC RESPONSIVE CRAFTING MODAL ---
+  // --- 4. DYNAMIC RESPONSIVE CRAFTING MODAL (STRICT CONTAINMENT) ---
   public openCraftingMenu(): void {
     this.setMobileControlsVisible(false);
     this.renderCraftingModal();
@@ -470,28 +477,28 @@ export class UIScene extends Phaser.Scene {
     const state = GameState.getInstance();
     const { w, h, isPortrait } = this.getViewport();
 
-    const modalW = isPortrait ? Math.min(365, w - 16) : Math.min(640, w - 24);
-    const modalH = isPortrait ? Math.min(520, h - 80) : Math.min(500, h - 30);
+    const modalW = isPortrait ? Math.min(355, w - 20) : Math.min(640, w - 24);
+    const modalH = isPortrait ? Math.min(480, h - 80) : Math.min(500, h - 30);
 
     this.craftingModal.setPosition(w / 2, h / 2);
 
     const bg = this.add.rectangle(0, 0, modalW, modalH, 0x0f0b1e, 0.98)
       .setStrokeStyle(2.5, 0xffd700);
 
-    const title = this.add.text(0, -modalH / 2 + 22, '🔨 WERKBANK: AUSBAU', {
+    const title = this.add.text(0, -modalH / 2 + 24, '🔨 WERKBANK: AUSBAU', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: isPortrait ? '14px' : '16px',
+      fontSize: isPortrait ? '13.5px' : '16px',
       color: '#ffd700',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const closeBtnBg = this.add.circle(modalW / 2 - 20, -modalH / 2 + 22, 16, 0x2b153b, 0.95)
+    const closeBtnBg = this.add.circle(modalW / 2 - 24, -modalH / 2 + 24, 13, 0x2b153b, 0.95)
       .setStrokeStyle(1.5, 0xff007f)
       .setInteractive({ useHandCursor: true });
 
-    const closeBtn = this.add.text(modalW / 2 - 20, -modalH / 2 + 22, '✖', {
+    const closeBtn = this.add.text(modalW / 2 - 24, -modalH / 2 + 24, '✖', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '15px',
+      fontSize: '13px',
       color: '#ff4da6'
     }).setOrigin(0.5);
 
@@ -499,20 +506,29 @@ export class UIScene extends Phaser.Scene {
 
     this.craftingModal.add([bg, title, closeBtnBg, closeBtn]);
 
-    const cardH = isPortrait ? 68 : 58;
+    const cardW = modalW - 20;
+    const cardH = isPortrait ? 70 : 58;
     let yOffset = -modalH / 2 + 54;
 
     state.craftingRecipes.forEach(recipe => {
-      const cardBg = this.add.rectangle(0, yOffset + cardH / 2, modalW - 16, cardH, 0x1a1236)
+      const cardBg = this.add.rectangle(0, yOffset + cardH / 2, cardW, cardH, 0x1a1236)
         .setStrokeStyle(1.5, recipe.built ? 0x00ff88 : 0x5a4878);
 
-      const icon = this.add.image(-modalW / 2 + 24, yOffset + cardH / 2, recipe.icon).setScale(0.8);
+      // Icon strictly constrained in size to fit within the card
+      const icon = this.add.image(-modalW / 2 + 28, yOffset + cardH / 2, recipe.icon);
+      const maxDim = Math.max(icon.width, icon.height);
+      if (maxDim > 24) {
+        icon.setScale(24 / maxDim);
+      } else {
+        icon.setScale(0.8);
+      }
 
       const nameTxt = this.add.text(-modalW / 2 + 48, yOffset + 10, recipe.name, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: isPortrait ? '12px' : '13px',
+        fontSize: isPortrait ? '11px' : '13px',
         color: recipe.built ? '#00ff88' : '#ffffff',
-        fontStyle: 'bold'
+        fontStyle: 'bold',
+        wordWrap: { width: modalW - 145 }
       });
 
       let costStr = recipe.costs.map(c => {
@@ -527,16 +543,16 @@ export class UIScene extends Phaser.Scene {
 
       const costTxt = this.add.text(-modalW / 2 + 48, yOffset + 36, costStr, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '10px',
+        fontSize: '9px',
         color: '#ffbb44',
         fontStyle: 'bold',
-        wordWrap: { width: modalW - 130 }
+        wordWrap: { width: modalW - 145 }
       });
 
       if (recipe.built) {
-        const builtBadge = this.add.text(modalW / 2 - 40, yOffset + cardH / 2, '✓ GEBAUT', {
+        const builtBadge = this.add.text(modalW / 2 - 44, yOffset + cardH / 2, '✓ GEBAUT', {
           fontFamily: 'Outfit, sans-serif',
-          fontSize: '11px',
+          fontSize: '10.5px',
           color: '#00ff88',
           fontStyle: 'bold'
         }).setOrigin(0.5);
@@ -545,13 +561,14 @@ export class UIScene extends Phaser.Scene {
         const canBuild = (!recipe.requiredFriendId || state.isFriendRecruited(recipe.requiredFriendId)) &&
           recipe.costs.every(c => state.getItemCount(c.itemId) >= c.amount);
 
-        const btnBg = this.add.rectangle(modalW / 2 - 40, yOffset + cardH / 2, 64, 28, canBuild ? 0xff007f : 0x2d2242)
+        // BAUEN button completely inside the card with margin
+        const btnBg = this.add.rectangle(modalW / 2 - 44, yOffset + cardH / 2, 58, 26, canBuild ? 0xff007f : 0x2d2242)
           .setStrokeStyle(1.5, canBuild ? 0xff66cc : 0x555555)
           .setInteractive({ useHandCursor: canBuild });
 
-        const btnTxt = this.add.text(modalW / 2 - 40, yOffset + cardH / 2, 'BAUEN', {
+        const btnTxt = this.add.text(modalW / 2 - 44, yOffset + cardH / 2, 'BAUEN', {
           fontFamily: 'Outfit, sans-serif',
-          fontSize: '11px',
+          fontSize: '10.5px',
           color: canBuild ? '#ffffff' : '#777777',
           fontStyle: 'bold'
         }).setOrigin(0.5);
@@ -572,7 +589,7 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  // --- 5. DYNAMIC RESPONSIVE QUEST MODAL ---
+  // --- 5. DYNAMIC RESPONSIVE QUEST MODAL (STRICT CONTAINMENT) ---
   public toggleQuestModal(): void {
     if (this.questModal.visible) {
       this.questModal.setVisible(false);
@@ -591,28 +608,28 @@ export class UIScene extends Phaser.Scene {
     const state = GameState.getInstance();
     const { w, h, isPortrait } = this.getViewport();
 
-    const modalW = isPortrait ? Math.min(365, w - 16) : Math.min(640, w - 24);
-    const modalH = isPortrait ? Math.min(520, h - 80) : Math.min(500, h - 30);
+    const modalW = isPortrait ? Math.min(355, w - 20) : Math.min(640, w - 24);
+    const modalH = isPortrait ? Math.min(440, h - 80) : Math.min(500, h - 30);
 
     this.questModal.setPosition(w / 2, h / 2);
 
     const bg = this.add.rectangle(0, 0, modalW, modalH, 0x100a26, 0.98)
       .setStrokeStyle(2.5, 0x00ffcc);
 
-    const title = this.add.text(0, -modalH / 2 + 22, '📜 QUESTS & FREUNDE', {
+    const title = this.add.text(0, -modalH / 2 + 24, '📜 QUESTS & FREUNDE', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: isPortrait ? '14px' : '16px',
+      fontSize: isPortrait ? '13.5px' : '16px',
       color: '#00ffcc',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const closeBtnBg = this.add.circle(modalW / 2 - 20, -modalH / 2 + 22, 16, 0x23143d, 0.95)
+    const closeBtnBg = this.add.circle(modalW / 2 - 24, -modalH / 2 + 24, 13, 0x23143d, 0.95)
       .setStrokeStyle(1.5, 0xff007f)
       .setInteractive({ useHandCursor: true });
 
-    const closeBtn = this.add.text(modalW / 2 - 20, -modalH / 2 + 22, '✖', {
+    const closeBtn = this.add.text(modalW / 2 - 24, -modalH / 2 + 24, '✖', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '15px',
+      fontSize: '13px',
       color: '#ff4da6'
     }).setOrigin(0.5);
 
@@ -620,33 +637,35 @@ export class UIScene extends Phaser.Scene {
 
     this.questModal.add([bg, title, closeBtnBg, closeBtn]);
 
-    const cardH = isPortrait ? 94 : 82;
+    const cardW = modalW - 20;
+    const cardH = isPortrait ? 90 : 82;
     let yOffset = -modalH / 2 + 54;
 
     state.quests.forEach(quest => {
       const isRecruited = state.isFriendRecruited(quest.friendId);
-      const cardBg = this.add.rectangle(0, yOffset + cardH / 2, modalW - 16, cardH, 0x1b1338)
+      const cardBg = this.add.rectangle(0, yOffset + cardH / 2, cardW, cardH, 0x1b1338)
         .setStrokeStyle(1.5, isRecruited ? 0x00ff88 : 0x00e5ff);
 
-      const titleTxt = this.add.text(-modalW / 2 + 14, yOffset + 10, quest.title, {
+      const titleTxt = this.add.text(-modalW / 2 + 16, yOffset + 10, quest.title, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: isPortrait ? '12px' : '13px',
+        fontSize: isPortrait ? '11px' : '13px',
         color: isRecruited ? '#00ff88' : '#ffd700',
-        fontStyle: 'bold'
+        fontStyle: 'bold',
+        wordWrap: { width: modalW - 90 }
       });
 
       const stepsStr = quest.steps.map(s => `${s.isCompleted ? '☑' : '☐'} ${s.text}`).join('\n');
-      const stepsTxt = this.add.text(-modalW / 2 + 14, yOffset + 30, stepsStr, {
+      const stepsTxt = this.add.text(-modalW / 2 + 16, yOffset + 28, stepsStr, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '10px',
+        fontSize: '9.5px',
         color: '#ffffff',
-        wordWrap: { width: modalW - 30 },
+        wordWrap: { width: modalW - 36 },
         lineSpacing: 3
       });
 
-      const statusBadge = this.add.text(modalW / 2 - 42, yOffset + 16, isRecruited ? '🎉 DABEI!' : '⏳ OFFEN', {
+      const statusBadge = this.add.text(modalW / 2 - 44, yOffset + 16, isRecruited ? '🎉 DABEI!' : '⏳ OFFEN', {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '11px',
+        fontSize: '10px',
         color: isRecruited ? '#00ff88' : '#ff9900',
         fontStyle: 'bold'
       }).setOrigin(0.5);
@@ -656,7 +675,7 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  // --- 6. DYNAMIC RESPONSIVE FINALE MODAL ---
+  // --- 6. DYNAMIC RESPONSIVE FINALE MODAL (STRICT CONTAINMENT) ---
   public openFinaleModal(): void {
     this.setMobileControlsVisible(false);
     this.renderFinaleModal();
@@ -668,8 +687,8 @@ export class UIScene extends Phaser.Scene {
 
     const { w, h, isPortrait } = this.getViewport();
 
-    const modalW = isPortrait ? Math.min(365, w - 16) : Math.min(640, w - 24);
-    const modalH = isPortrait ? Math.min(520, h - 80) : Math.min(500, h - 30);
+    const modalW = isPortrait ? Math.min(360, w - 16) : Math.min(640, w - 24);
+    const modalH = isPortrait ? Math.min(460, h - 80) : Math.min(500, h - 30);
 
     this.finaleModal.setPosition(w / 2, h / 2);
 
@@ -678,35 +697,35 @@ export class UIScene extends Phaser.Scene {
 
     const title = this.add.text(0, -modalH / 2 + 24, '🎂 HAPPY BIRTHDAY, VALENTIN! 🎂', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: isPortrait ? '14px' : '17px',
+      fontSize: isPortrait ? '13.5px' : '17px',
       color: '#ffd700',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const spacing = isPortrait ? 40 : 70;
-    const vSprite = this.add.sprite(-spacing * 1.5, -modalH / 2 + 75, 'valentin_dance').setScale(1.8);
-    const oSprite = this.add.sprite(-spacing * 0.5, -modalH / 2 + 75, 'olli_dance').setScale(1.8);
-    const lSprite = this.add.sprite(spacing * 0.5, -modalH / 2 + 75, 'leander_dance').setScale(1.8);
-    const cSprite = this.add.sprite(spacing * 1.5, -modalH / 2 + 75, 'candy_dance').setScale(1.8);
+    const spacing = isPortrait ? 38 : 70;
+    const vSprite = this.add.sprite(-spacing * 1.5, -modalH / 2 + 75, 'valentin_dance').setScale(1.45);
+    const oSprite = this.add.sprite(-spacing * 0.5, -modalH / 2 + 75, 'olli_dance').setScale(1.45);
+    const lSprite = this.add.sprite(spacing * 0.5, -modalH / 2 + 75, 'leander_dance').setScale(1.45);
+    const cSprite = this.add.sprite(spacing * 1.5, -modalH / 2 + 75, 'candy_dance').setScale(1.45);
 
-    const cakeImg = this.add.image(0, -modalH / 2 + 150, 'prop_birthday_cake').setScale(1.4);
+    const cakeImg = this.add.image(0, -modalH / 2 + 140, 'prop_birthday_cake').setScale(1.25);
 
-    const msg = this.add.text(0, modalH / 2 - 90, 'Du hast alle deine Freunde gefunden,\nden Party-Platz ausgebaut und den legendärsten\nGoblin-Rave aller Zeiten gestartet!', {
+    const msg = this.add.text(0, modalH / 2 - 80, 'Du hast alle deine Freunde gefunden,\nden Party-Platz ausgebaut und den legendärsten\nGoblin-Rave aller Zeiten gestartet!', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '11px',
       color: '#ffffff',
       align: 'center',
-      wordWrap: { width: modalW - 32 },
+      wordWrap: { width: modalW - 36 },
       lineSpacing: 3
     }).setOrigin(0.5);
 
-    const continueBtnBg = this.add.rectangle(0, modalH / 2 - 32, 170, 38, 0xff007f)
+    const continueBtnBg = this.add.rectangle(0, modalH / 2 - 28, 160, 34, 0xff007f)
       .setStrokeStyle(2, 0xffffff)
       .setInteractive({ useHandCursor: true });
 
-    const continueBtnTxt = this.add.text(0, modalH / 2 - 32, 'WEITER FEIERN! 🪩', {
+    const continueBtnTxt = this.add.text(0, modalH / 2 - 28, 'WEITER FEIERN! 🪩', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#ffffff',
       fontStyle: 'bold'
     }).setOrigin(0.5);
