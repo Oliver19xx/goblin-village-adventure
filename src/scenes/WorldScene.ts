@@ -66,6 +66,8 @@ export class WorldScene extends Phaser.Scene {
       state.recruitFriend('candy');
       state.recruitFriend('henning');
       state.craftingRecipes.forEach(r => { r.built = true; state.craftedUpgrades.add(r.id); });
+      state.isCakeBaked = true;
+      state.isCakePlaced = true;
     }
 
     if (targetZone && (targetZone === 'kanal' || targetZone === 'coworking' || targetZone === 'autobahn' || targetZone === 'bauernhof' || targetZone === 'hub')) {
@@ -143,11 +145,17 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // Create / place player
+    const spawnX = (zoneId === 'hub' && state.isCakePlaced) ? 480 : 480;
+    const spawnY = (zoneId === 'hub' && state.isCakePlaced) ? 350 : 340;
+
     if (!this.player) {
-      this.player = new Player(this, 480, 340);
+      this.player = new Player(this, spawnX, spawnY);
       this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     } else {
-      this.player.setPosition(480, 340);
+      this.player.setPosition(spawnX, spawnY);
+    }
+    if (state.isCakePlaced && zoneId === 'hub') {
+      this.player.isDancing = true;
     }
 
     this.physics.add.collider(this.player, this.obstacles);
@@ -200,10 +208,10 @@ export class WorldScene extends Phaser.Scene {
 
     // Central Party Table (Cake spot)
     const state = GameState.getInstance();
-    const table = this.obstacles.create(480, 320, 'prop_party_table');
+    const table = this.obstacles.create(480, 310, 'prop_party_table');
     table.setDepth(6).refreshBody();
 
-    const tblContainer = this.add.container(480, 288).setDepth(12);
+    const tblContainer = this.add.container(480, 275).setDepth(12);
     const tblTxt = this.add.text(0, 0, state.isCakePlaced ? '🎂 GEBURTSTAGSKUCHEN' : '🎉 PARTYTISCH', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '10px',
@@ -216,7 +224,7 @@ export class WorldScene extends Phaser.Scene {
     this.hubUpgrades.push(table, tblContainer);
 
     if (state.isCakePlaced) {
-      const cake = this.add.image(480, 305, 'prop_birthday_cake').setDepth(8);
+      const cake = this.add.image(480, 295, 'prop_birthday_cake').setDepth(8);
       this.hubUpgrades.push(cake);
     }
 
@@ -226,21 +234,21 @@ export class WorldScene extends Phaser.Scene {
     this.createPortal(840, 370, 'autobahn', '🍬 ZUR AUTOBAHN\n(Candy)');
     this.createPortal(840, 500, 'bauernhof', '🌿 ZUM BAUERNHOF\n(Henning)', 'prop_portal_green');
 
-    // Render Friends if recruited
+    // Render Friends grouped closely around the central party table
     if (state.isFriendRecruited('olli')) {
-      const olliNpc = new NPC(this, 360, 220, 'olli', '🎧 Olli', true);
+      const olliNpc = new NPC(this, 415, 235, 'olli', '🎧 Olli', true);
       this.npcs.push(olliNpc);
     }
-    if (state.isFriendRecruited('leander')) {
-      const leanderNpc = new NPC(this, 580, 220, 'leander', '📋 Leander', true);
-      this.npcs.push(leanderNpc);
-    }
     if (state.isFriendRecruited('candy')) {
-      const candyNpc = new NPC(this, 480, 180, 'candy', '🍬 Candy', true);
+      const candyNpc = new NPC(this, 480, 205, 'candy', '🍬 Candy', true);
       this.npcs.push(candyNpc);
     }
+    if (state.isFriendRecruited('leander')) {
+      const leanderNpc = new NPC(this, 545, 235, 'leander', '📋 Leander', true);
+      this.npcs.push(leanderNpc);
+    }
     if (state.isFriendRecruited('henning')) {
-      const henningNpc = new NPC(this, 360, 420, 'henning', '🌿 Henning', true);
+      const henningNpc = new NPC(this, 415, 360, 'henning', '🌿 Henning', true);
       this.npcs.push(henningNpc);
     }
 
@@ -521,40 +529,40 @@ export class WorldScene extends Phaser.Scene {
 
     // 1. String Lights (Deko)
     if (state.craftedUpgrades.has('upgrade_lights')) {
-      const lights1 = this.add.image(360, 100, 'prop_string_lights').setDepth(15);
-      const lights2 = this.add.image(580, 100, 'prop_string_lights').setDepth(15);
+      const lights1 = this.add.image(430, 115, 'prop_string_lights').setDepth(15);
+      const lights2 = this.add.image(530, 115, 'prop_string_lights').setDepth(15);
       this.hubUpgrades.push(lights1, lights2);
     }
 
-    // 2. DJ Booth & Speakers (Sound Upgrade)
+    // 2. DJ Booth & Speakers (Sound Upgrade - Olli's corner)
     if (state.craftedUpgrades.has('upgrade_sound')) {
-      const dj = this.add.image(360, 260, 'prop_dj_booth').setDepth(6);
-      const spk1 = this.add.image(300, 250, 'prop_speakers').setDepth(6);
-      const spk2 = this.add.image(420, 250, 'prop_speakers').setDepth(6);
+      const dj = this.add.image(415, 195, 'prop_dj_booth').setDepth(6);
+      const spk1 = this.add.image(380, 195, 'prop_speakers').setDepth(6);
+      const spk2 = this.add.image(445, 195, 'prop_speakers').setDepth(6);
       this.hubUpgrades.push(dj, spk1, spk2);
     }
 
-    // 3. Agile Retro-Lounge & Tischkicker (Activity Upgrade)
+    // 3. Agile Retro-Lounge & Tischkicker (Activity Upgrade - Leander's corner)
     if (state.craftedUpgrades.has('upgrade_chill')) {
-      const lounge = this.add.image(620, 250, 'prop_retro_lounge').setDepth(6);
+      const lounge = this.add.image(545, 195, 'prop_retro_lounge').setDepth(6);
       this.hubUpgrades.push(lounge);
     }
 
-    // 4. Glow Drink Bar (Drinks Upgrade)
+    // 4. Glow Drink Bar (Drinks Upgrade - Candy's spot)
     if (state.craftedUpgrades.has('upgrade_bar')) {
-      const bar = this.add.image(480, 230, 'prop_drink_bar').setDepth(6);
+      const bar = this.add.image(480, 165, 'prop_drink_bar').setDepth(6);
       this.hubUpgrades.push(bar);
     }
 
-    // 5. Bio-Hanf Smoke Lounge (Henning Upgrade)
+    // 5. Bio-Hanf Smoke Lounge (Henning Upgrade - Henning's corner)
     if (state.craftedUpgrades.has('upgrade_smoke')) {
-      const smokeLounge = this.add.image(620, 400, 'prop_smoke_lounge').setDepth(6);
+      const smokeLounge = this.add.image(415, 415, 'prop_smoke_lounge').setDepth(6);
       this.hubUpgrades.push(smokeLounge);
     }
 
     // 6. Giant Birthday Cake (Finale) - only if cake is placed on the table!
     if (state.isCakePlaced) {
-      const cake = this.add.image(480, 305, 'prop_birthday_cake').setDepth(8);
+      const cake = this.add.image(480, 295, 'prop_birthday_cake').setDepth(8);
       this.hubUpgrades.push(cake);
     }
   }
@@ -677,17 +685,17 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // 2. Check Central Party Table (Cake spot in Hub center)
-    if (GameState.getInstance().currentZone === 'hub' && Phaser.Math.Distance.Between(px, py, 480, 320) < interactDist + 16) {
+    if (GameState.getInstance().currentZone === 'hub' && Phaser.Math.Distance.Between(px, py, 480, 310) < interactDist + 16) {
       const state = GameState.getInstance();
       this.activeInteractable = { type: 'party_table', data: null };
       if (state.recruitedFriends.size < 4) {
-        this.showPrompt(480, 260, `🎂 [E] Partytisch (Hole erst alle 4 Freunde! ${state.recruitedFriends.size}/4)`);
+        this.showPrompt(480, 255, `🎂 [E] Partytisch (Hole erst alle 4 Freunde! ${state.recruitedFriends.size}/4)`);
       } else if (!state.isCakeBaked) {
-        this.showPrompt(480, 260, '🎂 [E] Partytisch (Kuchen erst backen!)');
+        this.showPrompt(480, 255, '🎂 [E] Partytisch (Kuchen erst backen!)');
       } else if (!state.isCakePlaced) {
-        this.showPrompt(480, 260, '✨ [E] Geburtstagskuchen aufstellen! 🎂');
+        this.showPrompt(480, 255, '✨ [E] Geburtstagskuchen aufstellen! 🎂');
       } else {
-        this.showPrompt(480, 260, '🪩 [E] Party-Finale feiern!');
+        this.showPrompt(480, 255, '🪩 [E] Party-Finale feiern!');
       }
       return;
     }
@@ -867,8 +875,8 @@ export class WorldScene extends Phaser.Scene {
       this.player.isDancing = true;
     }
 
-    // Confetti Fireworks in Hub
-    this.add.particles(480, 200, 'particle_confetti', {
+    // Confetti Fireworks centered in Hub plaza
+    this.add.particles(480, 240, 'particle_confetti', {
       lifespan: 3000,
       speed: { min: 100, max: 300 },
       angle: { min: 0, max: 360 },
@@ -886,12 +894,12 @@ export class WorldScene extends Phaser.Scene {
       showToast: (msg: string) => void;
     };
 
-    // 1. Move Player smoothly in front of the table
-    this.player.setPosition(480, 365);
+    // 1. Move Player smoothly in front of the table facing the friends
+    this.player.setPosition(480, 350);
     this.player.isDancing = true;
 
     // 2. Place cake sprite on table with a bounce
-    const cake = this.add.image(480, 305, 'prop_birthday_cake').setDepth(8).setScale(0);
+    const cake = this.add.image(480, 295, 'prop_birthday_cake').setDepth(8).setScale(0);
     this.zoneObjects.push(cake);
     this.hubUpgrades.push(cake);
 
@@ -914,7 +922,7 @@ export class WorldScene extends Phaser.Scene {
     uiScene.showToast('🎂 KUCHEN PLATZIERT! DIE PARTY DES JAHRHUNDERTS BEGINNT!');
 
     // 4. Sparkles and candle glow rising from cake
-    const cakeSparkles = this.add.particles(480, 295, 'particle_sparkle', {
+    const cakeSparkles = this.add.particles(480, 285, 'particle_sparkle', {
       lifespan: 1000,
       speed: { min: 20, max: 60 },
       scale: { start: 1.2, end: 0 },
@@ -923,13 +931,16 @@ export class WorldScene extends Phaser.Scene {
     }).setDepth(50);
     this.zoneObjects.push(cakeSparkles);
 
-    // 5. Confetti celebration
+    // 5. Confetti celebration in central area
     this.triggerFinaleCelebration();
 
-    // 6. Make all friends dance & rejoice with floating emotes
+    // 6. Center camera smoothly on central celebration hub (480, 290)
+    this.cameras.main.pan(480, 290, 800, 'Power2');
+
+    // 7. Make all friends dance & rejoice with floating emotes
     this.npcs.forEach((npc, index) => {
       npc.isDancing = true;
-      this.time.delayedCall(index * 250, () => {
+      this.time.delayedCall(index * 200, () => {
         const cheerTxt = this.add.text(npc.x, npc.y - 40, '🎉 HAPPY BIRTHDAY!', {
           fontFamily: 'Outfit, sans-serif',
           fontSize: '12px',
@@ -949,8 +960,8 @@ export class WorldScene extends Phaser.Scene {
       });
     });
 
-    // 7. Open the Finale Modal after celebratory animations
-    this.time.delayedCall(1600, () => {
+    // 8. Open the Finale Modal after celebratory animations
+    this.time.delayedCall(1800, () => {
       uiScene.openFinaleModal();
     });
   }
