@@ -193,10 +193,40 @@ export class UIScene extends Phaser.Scene {
     this.inventoryContainer = this.add.container(14, 44);
     this.hudContainer.add(this.inventoryContainer);
 
-    // Action / Menu Buttons (Quests, Crafting, Sound)
+    // Desktop Header Buttons (Quests, Crafting)
+    this.questBtnContainer = this.createHeaderButton('📜 Quests', () => this.toggleQuestModal());
+    this.craftBtnContainer = this.createHeaderButton('🔨 Bauen', () => this.toggleCraftingModal());
+    this.hudContainer.add([this.questBtnContainer, this.craftBtnContainer]);
+
+    // Sound Button
     this.soundBtnContainer = this.createPillButton(w - 24, 44, '🔊', 0x3a1d52, () => this.toggleSound());
     this.soundBtnText = this.soundBtnContainer.getAt(1) as Phaser.GameObjects.Text;
     this.hudContainer.add(this.soundBtnContainer);
+  }
+
+  private createHeaderButton(text: string, onClick: () => void): Phaser.GameObjects.Container {
+    const container = this.add.container(0, 0);
+    const bg = this.add.rectangle(0, 0, 80, 26, 0x261a40, 0.9)
+      .setStrokeStyle(1.2, 0x8a45d0)
+      .setInteractive({ useHandCursor: true });
+
+    const lbl = this.add.text(0, 0, text, {
+      fontFamily: 'Outfit, sans-serif',
+      fontSize: '11px',
+      color: '#ffffff',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    bg.on('pointerdown', () => {
+      SoundEngine.getInstance().playPickup();
+      onClick();
+    });
+    bg.on('pointerover', () => bg.setFillStyle(0x3e2868));
+    bg.on('pointerout', () => bg.setFillStyle(0x261a40));
+
+    container.add([bg, lbl]);
+    container.setSize(80, 26);
+    return container;
   }
 
   private createPillButton(x: number, y: number, text: string, bgColor: number, callback: () => void): Phaser.GameObjects.Container {
@@ -938,8 +968,8 @@ export class UIScene extends Phaser.Scene {
         this.inventoryContainer.setPosition(18, 48);
 
         // Mobile uses thumb buttons [Q] and [C]
-        this.questBtnContainer.setVisible(false);
-        this.craftBtnContainer.setVisible(false);
+        if (this.questBtnContainer) this.questBtnContainer.setVisible(false);
+        if (this.craftBtnContainer) this.craftBtnContainer.setVisible(false);
       } else {
         // Desktop / Landscape single row
         this.zoneText.setPosition(20, 29).setFontSize('14px');
@@ -949,8 +979,8 @@ export class UIScene extends Phaser.Scene {
 
         this.inventoryContainer.setPosition(w * 0.48, 29);
 
-        this.questBtnContainer.setVisible(true).setPosition(w - 215, 29);
-        this.craftBtnContainer.setVisible(true).setPosition(w - 120, 29);
+        if (this.questBtnContainer) this.questBtnContainer.setVisible(true).setPosition(w - 215, 29);
+        if (this.craftBtnContainer) this.craftBtnContainer.setVisible(true).setPosition(w - 120, 29);
         this.soundBtnContainer.setPosition(w - 38, 29);
       }
     }

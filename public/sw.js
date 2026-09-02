@@ -1,4 +1,4 @@
-const CACHE_NAME = 'goblin-rave-v1';
+const CACHE_NAME = 'goblin-rave-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
