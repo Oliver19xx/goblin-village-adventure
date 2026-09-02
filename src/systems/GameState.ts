@@ -152,7 +152,7 @@ export class GameState extends Phaser.Events.EventEmitter {
       {
         id: 'upgrade_cake',
         name: 'Der Gigantische Geburtstagskuchen 🎂',
-        description: 'Das krönende Meisterwerk für Valentins Geburtstag! Kann direkt an der Werkbank gebacken werden.',
+        description: 'Das krönende Meisterwerk für Valentins Geburtstag! Wird freigeschaltet, wenn Olli, Leander & Candy da sind.',
         icon: 'prop_birthday_cake',
         category: 'finale',
         costs: [
@@ -160,6 +160,7 @@ export class GameState extends Phaser.Events.EventEmitter {
           { itemId: 'scrap', amount: 3 },
           { itemId: 'glowstick', amount: 4 }
         ],
+        requiresAllFriends: true,
         built: false,
         unlockText: '🎂 Kuchen erfolgreich gebacken! Bringe ihn zum Partytisch in die Mitte!'
       }
@@ -209,7 +210,12 @@ export class GameState extends Phaser.Events.EventEmitter {
     const recipe = this.craftingRecipes.find(r => r.id === recipeId);
     if (!recipe || recipe.built) return false;
 
-    // Check friend requirement (Cake does NOT require friends)
+    // Check all friends requirement (for Birthday Cake)
+    if (recipe.requiresAllFriends && this.recruitedFriends.size < 3) {
+      return false;
+    }
+
+    // Check specific friend requirement
     if (recipe.requiredFriendId && !this.isFriendRecruited(recipe.requiredFriendId)) {
       return false;
     }

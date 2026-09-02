@@ -18,6 +18,7 @@ export interface CraftingRecipe {
   costs: { itemId: string; amount: number }[];
   built: boolean;
   requiredFriendId?: string;
+  requiresAllFriends?: boolean;
   unlockText: string;
 }
 

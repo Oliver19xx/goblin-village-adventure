@@ -594,7 +594,9 @@ export class WorldScene extends Phaser.Scene {
     if (GameState.getInstance().currentZone === 'hub' && Phaser.Math.Distance.Between(px, py, 480, 320) < interactDist + 16) {
       const state = GameState.getInstance();
       this.activeInteractable = { type: 'party_table', data: null };
-      if (!state.isCakeBaked) {
+      if (state.recruitedFriends.size < 3) {
+        this.showPrompt(480, 260, `🎂 [E] Partytisch (Hole erst alle Freunde! ${state.recruitedFriends.size}/3)`);
+      } else if (!state.isCakeBaked) {
         this.showPrompt(480, 260, '🎂 [E] Partytisch (Kuchen erst backen!)');
       } else if (!state.isCakePlaced) {
         this.showPrompt(480, 260, '✨ [E] Geburtstagskuchen aufstellen! 🎂');
@@ -658,8 +660,11 @@ export class WorldScene extends Phaser.Scene {
         break;
 
       case 'party_table': {
-        if (!state.isCakeBaked) {
-          uiScene.showToast('🔨 Gehe zur Werkbank (oben links), um den Kuchen zu backen!');
+        if (state.recruitedFriends.size < 3) {
+          uiScene.showToast(`🧌 Hole erst alle 3 Freunde zur Party (${state.recruitedFriends.size}/3), um den Kuchen zu backen!`);
+          SoundEngine.getInstance().playPickup();
+        } else if (!state.isCakeBaked) {
+          uiScene.showToast('🔨 Alle Freunde sind da! Backe jetzt den Kuchen an der Werkbank!');
           SoundEngine.getInstance().playPickup();
         } else if (!state.isCakePlaced) {
           this.animateCakePlacement();

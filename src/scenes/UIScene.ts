@@ -537,7 +537,9 @@ export class UIScene extends Phaser.Scene {
         return `${name}: ${cur}/${c.amount}`;
       }).join(' | ');
 
-      if (recipe.requiredFriendId && !state.isFriendRecruited(recipe.requiredFriendId)) {
+      if (recipe.requiresAllFriends && state.recruitedFriends.size < 3) {
+        costStr = `🔒 Braucht alle 3 Freunde (${state.recruitedFriends.size}/3)`;
+      } else if (recipe.requiredFriendId && !state.isFriendRecruited(recipe.requiredFriendId)) {
         costStr = `🔒 Braucht ${recipe.requiredFriendId.toUpperCase()}`;
       }
 
@@ -558,7 +560,8 @@ export class UIScene extends Phaser.Scene {
         }).setOrigin(0.5);
         this.craftingModal.add([cardBg, icon, nameTxt, costTxt, builtBadge]);
       } else {
-        const canBuild = (!recipe.requiredFriendId || state.isFriendRecruited(recipe.requiredFriendId)) &&
+        const canBuild = (!recipe.requiresAllFriends || state.recruitedFriends.size >= 3) &&
+          (!recipe.requiredFriendId || state.isFriendRecruited(recipe.requiredFriendId)) &&
           recipe.costs.every(c => state.getItemCount(c.itemId) >= c.amount);
 
         // BAUEN button completely inside the card with margin
