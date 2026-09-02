@@ -58,40 +58,40 @@ export const DIALOGUES: { [key: string]: DialogueNode } = {
     ]
   },
 
-  // --- LEANDER (Skater in der Skatehalle) ---
+  // --- LEANDER (Agile Scrum Master im Coworking-Bunker) ---
   leander_intro: {
     id: 'leander_intro',
     speaker: 'leander',
-    speakerName: '🛹 Leander (Skater-Goblin)',
-    text: 'Yo Valentin! HAPPY BIRTHDAY, mein Bester! 🎉 Ich wollte gerade ' + 'nen 540-Kickflip über die Quarterpipe landen, da sind mir die Kugellager zerfetzt! Und mein eigener Akku ist auch leer... Ich brauch High-Speed Rollen und eine Dose Goblin-Energy!',
+    speakerName: '📋 Leander (Scrum Master)',
+    text: 'Yo Valentin! HAPPY BIRTHDAY, mein Bester! 🎉 Ich stecke mitten im Sprint-Planning für deinen Geburtstag, aber wir haben einen kritischen Blocker im Backlog! Ohne meinen goldenen Post-It-Block und einen doppelten Hafer-Espresso bricht die Team-Velocity ein. Kannst du die Impediments beseitigen?',
     options: [
-      { label: 'Ich find deine Rollen & Energy!', nextNodeId: 'leander_accept' },
-      { label: 'Wie war der Trick sonst so?', nextNodeId: 'leander_trick' }
+      { label: 'Klar Leander! Ich finde deine Post-Its & Espresso!', nextNodeId: 'leander_accept' },
+      { label: 'Was steht auf den goldenen Post-Its?', nextNodeId: 'leander_lore' }
     ]
   },
-  leander_trick: {
-    id: 'leander_trick',
+  leander_lore: {
+    id: 'leander_lore',
     speaker: 'leander',
-    speakerName: '🛹 Leander (Skater-Goblin)',
-    text: 'Er war so unfassbar steil, dass die Funken von der Coping geflogen sind! Aber ohne neue Rollen rollt hier gar nix mehr.',
+    speakerName: '📋 Leander (Scrum Master)',
+    text: 'Das sind die Core User Stories für deine Party: Subwoofer-Alignment, Bass-Drop-Testing und Cake-Deployment! Ohne die Stories ist die Definition of Done nicht erreichbar!',
     options: [
-      { label: 'Ich hol die Ersatzteile!', nextNodeId: 'leander_accept' }
+      { label: 'Alles klar, ich hol die Sachen!', nextNodeId: 'leander_accept' }
     ]
   },
   leander_accept: {
     id: 'leander_accept',
     speaker: 'leander',
-    speakerName: '🛹 Leander (Skater-Goblin)',
-    text: 'Mega! Schau mal in der hinteren Werkstatt-Ecke und beim Snack-Automaten nach. Sobald mein Board fit ist, pack ich Rampen und Sofas ein und wir rocken deinen Bauwagenplatz!',
+    speakerName: '📋 Leander (Scrum Master)',
+    text: 'Top! Schau mal drüben am Kanban-Board und beim Barista-Tresen nach. Sobald der Blocker resolved ist, packe ich die Retro-Lounge und den Tischkicker ein und deploye mich zu dir!',
     options: [
-      { label: 'Auf gehts!', action: 'close' }
+      { label: 'Sprint gestartet!', action: 'close' }
     ]
   },
   leander_waiting: {
     id: 'leander_waiting',
     speaker: 'leander',
-    speakerName: '🛹 Leander (Skater-Goblin)',
-    text: 'Rollen und Energy noch nicht am Start? Check mal die Rampenkanten und die Kisten ganz oben in der Halle!',
+    speakerName: '📋 Leander (Scrum Master)',
+    text: 'Post-Its und Espresso noch nicht im Sprint? Check mal die Kaffeemaschine und die Standup-Ecke ganz hinten im Coworking-Bunker!',
     options: [
       { label: 'Bin dran!', action: 'close' }
     ]
@@ -99,8 +99,8 @@ export const DIALOGUES: { [key: string]: DialogueNode } = {
   leander_complete: {
     id: 'leander_complete',
     speaker: 'leander',
-    speakerName: '🛹 Leander (Skater-Goblin)',
-    text: '*Tssssk - Gluck gluck* AHHH, die Energy ballert direkt in die Goblin-Waden! Und die Rollen drehen wie Butter! Valentin, danke Mann! Ich bring die chilligsten Skate-Sofas mit zu deiner Party!',
+    speakerName: '📋 Leander (Scrum Master)',
+    text: '*Schlürf* AHHH, dieser Espresso bringt 120% Velocity! Und die goldenen Post-Its kleben perfekt am Board! Definition of Done ist erfüllt! Ich packe den Kanban-Kicker ein und feiere mit dir am Hub!',
     options: [
       { label: 'Ab zum Bauwagenplatz!', action: 'recruit_leander' }
     ]
@@ -108,10 +108,10 @@ export const DIALOGUES: { [key: string]: DialogueNode } = {
   leander_hub: {
     id: 'leander_hub',
     speaker: 'leander',
-    speakerName: '🛹 Leander (Skater-Goblin)',
-    text: 'Der Platz hier hat den besten Flow! Wenn du die Skater-Lounge baust, zeig ich Grinds über den Biertisch! Lass krachen, Geburtstagskind!',
+    speakerName: '📋 Leander (Scrum Master)',
+    text: 'Hier am Hub stimmt die Team-Velocity einfach! Wenn du an deiner Werkbank die Agile Retro-Lounge baust, fordern wir Olli zu einer Runde Tischkicker heraus! Happy Birthday!',
     options: [
-      { label: 'Hell yeah!', action: 'close' }
+      { label: 'Agile feiern!', action: 'close' }
     ]
   },
 
@@ -172,12 +172,69 @@ export const DIALOGUES: { [key: string]: DialogueNode } = {
     ]
   },
 
+  // --- HENNING (Bio-Bauer & Cannabis Social Club Betreiber) ---
+  henning_intro: {
+    id: 'henning_intro',
+    speaker: 'henning',
+    speakerName: '🌿 Henning (Bio-Bauer & CSC-Host)',
+    text: 'Moin Valentin! Herzlichen Glückwunsch zum Geburtstag, mein Bester! 🎂🌿 Ich wollte schon längst zu deinem Rave tuckern, aber hier auf dem Bio-Bauernhof steht die Ernte für unseren Cannabis Social Club an! Mir fehlen noch meine goldenen Zauber-Samen und der Kristall-Vaporizer... Kannst du kurz helfen?',
+    options: [
+      { label: 'Klar Henning! Ich suche Saatgut & Vaporizer!', nextNodeId: 'henning_accept' },
+      { label: 'Was macht die Zauber-Samen so besonders?', nextNodeId: 'henning_lore' }
+    ]
+  },
+  henning_lore: {
+    id: 'henning_lore',
+    speaker: 'henning',
+    speakerName: '🌿 Henning (Bio-Bauer & CSC-Host)',
+    text: 'Das ist 100% Bio-zertifiziertes Gourmet-Saatgut mit feinsten Terpenen! Völlig legal angebaut im CSC "Goblin Green". Wenn der Vaporizer dampft, duftet der ganze Bauwagenplatz nach wilden Kräutern und Entspannung pur!',
+    options: [
+      { label: 'Das passt perfekt zum Rave! Ich hole sie!', nextNodeId: 'henning_accept' }
+    ]
+  },
+  henning_accept: {
+    id: 'henning_accept',
+    speaker: 'henning',
+    speakerName: '🌿 Henning (Bio-Bauer & CSC-Host)',
+    text: 'Wunderbar! Schau mal drüben im Gewächshaus und beim alten Traktor nach. Sobald wir alles haben, werfe ich den Traktor an und bringe die gemütlichsten Hanf-Sofas und Kräuter-Nebelwerfer zu dir!',
+    options: [
+      { label: 'Ich bin schon am Suchen!', action: 'close' }
+    ]
+  },
+  henning_waiting: {
+    id: 'henning_waiting',
+    speaker: 'henning',
+    speakerName: '🌿 Henning (Bio-Bauer & CSC-Host)',
+    text: 'Saatgut und Vaporizer noch nicht gefunden? Schau mal zwischen den Hanfpflanzen und drüben beim Traktor nach!',
+    options: [
+      { label: 'Ich suche weiter!', action: 'close' }
+    ]
+  },
+  henning_complete: {
+    id: 'henning_complete',
+    speaker: 'henning',
+    speakerName: '🌿 Henning (Bio-Bauer & CSC-Host)',
+    text: 'Klasse, da sind die Zauber-Samen! Und der Kristall-Vaporizer glänzt wie eine Eins! Valentin, du bist ein echter Ehren-Bauer! Ich lade die Bio-Hanf-Lounge auf den Traktor und tucker rüber zu deinem Party-Hub!',
+    options: [
+      { label: 'Auf geht\'s zur Party, Henning!', action: 'recruit_henning' }
+    ]
+  },
+  henning_hub: {
+    id: 'henning_hub',
+    speaker: 'henning',
+    speakerName: '🌿 Henning (Bio-Bauer & CSC-Host)',
+    text: 'Herrlich, diese Party-Atmosphäre am Bauwagenplatz! Valentin, bester Geburtstag ever! Wenn du an deiner Werkbank die Bio-Hanf-Lounge baust, sorgt der Kräuter-Nebel für absolute Wohlfühl-Vibes!',
+    options: [
+      { label: 'Chillig weiterfeiern, Henning!', action: 'close' }
+    ]
+  },
+
   // --- FINALE DIALOGUE ---
   finale_dialogue: {
     id: 'finale_dialogue',
     speaker: 'narrator',
     speakerName: '🎉 DIE GEBURTSTAGS-PARTY DES JAHRHUNDERTS!',
-    text: 'Alle Freunde sind versammelt! Olli lässt die Subwoofer wummern, Leander springt waghalsige Tricks, Candy verzaubert alle mit Glitzer-Punch und der riesige Geburtstagskuchen leuchtet mit 1000 Kerzen! ALLES GUTE ZUM GEBURTSTAG, VALENTIN! 🧌🎂✨🥳',
+    text: 'Alle Freunde sind versammelt! Olli lässt die Subwoofer wummern, Scrum Master Leander feiert das beste Sprint-Review aller Zeiten, Candy verzaubert mit Glitzer-Punch, Bio-Bauer Henning sorgt für die chilligsten Hanf-Vibes und der riesige Geburtstagskuchen leuchtet im Zentrum! ALLES GUTE ZUM GEBURTSTAG, VALENTIN! 🧌🎂✨🌿🥳',
     options: [
       { label: 'DANKE AN ALLE! WEITERFEIERN! 🪩', action: 'close' }
     ]

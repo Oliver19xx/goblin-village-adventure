@@ -187,6 +187,45 @@ export class TextureGenerator {
       drawPlank(21);
       scene.textures.addCanvas('tile_wall', canvas);
     }
+
+    // 7. Modern Coworking Tech Parquet Tile
+    {
+      const { canvas, ctx } = this.createCanvas(32, 32);
+      ctx.fillStyle = '#1e1b2e';
+      ctx.fillRect(0, 0, 32, 32);
+      // Clean wood parquet strips
+      ctx.fillStyle = '#2d2745';
+      ctx.fillRect(1, 1, 30, 14);
+      ctx.fillRect(1, 17, 30, 14);
+      ctx.fillStyle = '#3c345c';
+      ctx.fillRect(2, 2, 28, 3);
+      ctx.fillRect(2, 18, 28, 3);
+      // Subtle cyan data glow seam
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+      ctx.fillRect(0, 15, 32, 1);
+      scene.textures.addCanvas('tile_coworking', canvas);
+    }
+
+    // 8. Rich Farm Soil & Sprout Tile (Bauernhof)
+    {
+      const { canvas, ctx } = this.createCanvas(32, 32);
+      ctx.fillStyle = '#382314';
+      ctx.fillRect(0, 0, 32, 32);
+      // Soil texture
+      for (let i = 0; i < 20; i++) {
+        const sx = (i * 13) % 32;
+        const sy = (i * 17) % 32;
+        ctx.fillStyle = i % 2 === 0 ? '#4d321d' : '#29180c';
+        ctx.fillRect(sx, sy, 3, 3);
+      }
+      // Green sprouts
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(6, 8, 2, 4);
+      ctx.fillRect(5, 7, 4, 2);
+      ctx.fillRect(20, 22, 2, 4);
+      ctx.fillRect(19, 21, 4, 2);
+      scene.textures.addCanvas('tile_farm', canvas);
+    }
   }
 
   // --- CHARACTERS ---
@@ -215,15 +254,16 @@ export class TextureGenerator {
       hasSunglasses: true
     });
 
-    // Leander (Skater in Skatehalle)
+    // Leander (Agile Scrum Master im Coworking-Bunker)
     this.createGoblinSpritesheet(scene, 'leander', {
       skinBase: '#3f9e57',
       skinLight: '#67bf7c',
       skinShadow: '#216334',
-      clothes: '#00b4d8', // cyan hoodie
-      pants: '#24242e',
-      shoes: '#ff4800',
-      hasSkaterCap: true
+      clothes: '#0284c7', // agile tech-blue hoodie
+      pants: '#1e293b',
+      shoes: '#38bdf8',
+      hasScrumGlasses: true,
+      hasScrumLanyard: true
     });
 
     // Candy (Rave-Queen unter Autobahnbrücke)
@@ -236,6 +276,18 @@ export class TextureGenerator {
       shoes: '#00ffcc',
       hasRaveAntenna: true,
       hasGlowCheeks: true
+    });
+
+    // Henning (Bio-Bauer & Cannabis Social Club Betreiber)
+    this.createGoblinSpritesheet(scene, 'henning', {
+      skinBase: '#4fa85c',
+      skinLight: '#7cd989',
+      skinShadow: '#266930',
+      clothes: '#ca8a04', // rustic plaid flannel shirt
+      pants: '#166534', // green farmer dungarees
+      shoes: '#854d0e', // sturdy brown boots
+      hasFarmerHat: true,
+      hasOveralls: true
     });
   }
 
@@ -254,6 +306,10 @@ export class TextureGenerator {
       hasHeadphones?: boolean;
       hasSunglasses?: boolean;
       hasSkaterCap?: boolean;
+      hasScrumGlasses?: boolean;
+      hasScrumLanyard?: boolean;
+      hasFarmerHat?: boolean;
+      hasOveralls?: boolean;
       hasRaveAntenna?: boolean;
       hasGlowCheeks?: boolean;
     }
@@ -430,16 +486,52 @@ export class TextureGenerator {
         ctx.fillRect(18, 11 + bounce, 4, 1);
       }
 
-      // Leander: Backwards Skater Cap
-      if (opts.hasSkaterCap) {
-        ctx.fillStyle = '#ff5500';
-        ctx.fillRect(7, 4 + bounce, 18, 5);
-        // Cap brim facing backward
-        ctx.fillStyle = '#cc3300';
-        ctx.fillRect(5, 7 + bounce, 4, 3);
-        // Logo patch on front
+      // Leander: Scrum Master Stylish Glasses & Company Lanyard / Badge
+      if (opts.hasScrumGlasses) {
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeRect(8, 10 + bounce, 6, 5);
+        ctx.strokeRect(18, 10 + bounce, 6, 5);
+        ctx.fillRect(14, 12 + bounce, 4, 1); // Bridge
+        // Blue light anti-glare reflection
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(9, 11 + bounce, 2, 2);
+        ctx.fillRect(19, 11 + bounce, 2, 2);
+      }
+      if (opts.hasScrumLanyard) {
+        // Neon green / yellow company lanyard with pass badge
+        ctx.fillStyle = '#eab308';
+        ctx.fillRect(15, 21 + bounce, 2, 5);
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(14, 5 + bounce, 4, 3);
+        ctx.fillRect(14, 25 + bounce, 4, 3); // Badge card
+        ctx.fillStyle = '#0284c7';
+        ctx.fillRect(15, 26 + bounce, 2, 1);
+      }
+
+      // Henning: Rustic Straw Farmer Hat & Overalls with Cannabis Leaf
+      if (opts.hasFarmerHat) {
+        // Hat brim
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(4, 5 + bounce, 24, 3);
+        // Hat crown
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillRect(9, 1 + bounce, 14, 5);
+        // Green hatband
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(9, 4 + bounce, 14, 2);
+      }
+      if (opts.hasOveralls) {
+        // Dungaree straps
+        ctx.fillStyle = '#166534';
+        ctx.fillRect(10, 21 + bounce, 2, 5);
+        ctx.fillRect(20, 21 + bounce, 2, 5);
+        // Golden buckle buttons
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(10, 24 + bounce, 2, 2);
+        ctx.fillRect(20, 24 + bounce, 2, 2);
+        // Mini Cannabis Leaf badge on chest
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(15, 23 + bounce, 2, 3);
+        ctx.fillRect(14, 24 + bounce, 4, 1);
       }
 
       // Candy: Glow Rave Antenna & Glitter Cheeks
@@ -824,6 +916,280 @@ export class TextureGenerator {
 
       scene.textures.addCanvas('prop_party_table', canvas);
     }
+
+    // 10. Kanban Standup Board (64x44)
+    {
+      const { canvas, ctx } = this.createCanvas(64, 44);
+      // Silver aluminum frame
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(2, 2, 60, 40);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(4, 4, 56, 36);
+
+      // Title bar
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(4, 4, 56, 8);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 6px sans-serif';
+      ctx.fillText('SPRINT 42 KANBAN', 6, 10);
+
+      // 3 Columns: TO DO / IN PROG / DONE
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(22, 12); ctx.lineTo(22, 40);
+      ctx.moveTo(42, 12); ctx.lineTo(42, 40);
+      ctx.stroke();
+
+      // Post-It Notes
+      const notes = [
+        { x: 6, y: 14, col: '#facc15' },
+        { x: 13, y: 14, col: '#f472b6' },
+        { x: 6, y: 22, col: '#38bdf8' },
+        { x: 24, y: 14, col: '#facc15' },
+        { x: 32, y: 14, col: '#4ade80' },
+        { x: 24, y: 23, col: '#f472b6' },
+        { x: 44, y: 14, col: '#4ade80' },
+        { x: 52, y: 14, col: '#4ade80' },
+        { x: 44, y: 22, col: '#4ade80' },
+        { x: 52, y: 22, col: '#4ade80' },
+      ];
+      notes.forEach(n => {
+        ctx.fillStyle = n.col;
+        ctx.fillRect(n.x, n.y, 6, 6);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(n.x + 1, n.y + 2, 4, 1);
+        ctx.fillRect(n.x + 1, n.y + 4, 3, 1);
+      });
+
+      scene.textures.addCanvas('prop_kanban_board', canvas);
+    }
+
+    // 11. Agile Retro Lounge & Foosball Kicker (72x40)
+    {
+      const { canvas, ctx } = this.createCanvas(72, 40);
+      // Modern Blue/Purple Lounge Sofas
+      ctx.fillStyle = '#0369a1';
+      ctx.fillRect(4, 12, 28, 24);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(6, 14, 24, 8);
+      ctx.fillStyle = '#0c4a6e';
+      ctx.fillRect(4, 32, 28, 4);
+
+      // Foosball Table (Tischkicker)
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(38, 14, 30, 22);
+      ctx.fillStyle = '#15803d'; // Green Pitch
+      ctx.fillRect(40, 16, 26, 18);
+      // White pitch lines
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(42, 18, 22, 14);
+      ctx.beginPath();
+      ctx.arc(53, 25, 3, 0, Math.PI * 2);
+      ctx.stroke();
+      // Chrome player rods
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(36, 20, 34, 1.5);
+      ctx.fillRect(36, 28, 34, 1.5);
+      // Mini Players (Blue & Red)
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(45, 19, 2, 3);
+      ctx.fillRect(59, 19, 2, 3);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(45, 27, 2, 3);
+      ctx.fillRect(59, 27, 2, 3);
+
+      scene.textures.addCanvas('prop_retro_lounge', canvas);
+    }
+
+    // 12. Rustic Barn & CSC Headquarters (72x60)
+    {
+      const { canvas, ctx } = this.createCanvas(72, 60);
+      // Red Barn Wood Structure
+      ctx.fillStyle = '#831843';
+      ctx.fillRect(4, 18, 64, 40);
+      ctx.fillStyle = '#9f1239';
+      ctx.fillRect(6, 20, 60, 36);
+
+      // Roof (Gabled Peak)
+      ctx.fillStyle = '#4c0519';
+      ctx.beginPath();
+      ctx.moveTo(36, 2);
+      ctx.lineTo(2, 20);
+      ctx.lineTo(70, 20);
+      ctx.fill();
+
+      // White Trim Lines
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(36, 4);
+      ctx.lineTo(4, 20);
+      ctx.lineTo(68, 20);
+      ctx.closePath();
+      ctx.stroke();
+
+      // Large Double Barn Doors with X-Brace
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(22, 28, 28, 28);
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(22, 28, 28, 28);
+      ctx.beginPath();
+      ctx.moveTo(22, 28); ctx.lineTo(36, 56);
+      ctx.moveTo(36, 28); ctx.lineTo(22, 56);
+      ctx.moveTo(36, 28); ctx.lineTo(50, 56);
+      ctx.moveTo(50, 28); ctx.lineTo(36, 56);
+      ctx.stroke();
+
+      // Glowing Neon CSC Sign over door
+      ctx.fillStyle = '#052e16';
+      ctx.fillRect(18, 19, 36, 7);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(18, 19, 36, 7);
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 5.5px sans-serif';
+      ctx.fillText('🌿 CSC SOCIAL CLUB', 19, 24.5);
+
+      scene.textures.addCanvas('prop_barn', canvas);
+    }
+
+    // 13. Green Farm Tractor (52x36)
+    {
+      const { canvas, ctx } = this.createCanvas(52, 36);
+      // Green Engine Hood & Body
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(8, 12, 26, 14);
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(10, 14, 22, 4);
+
+      // Yellow Grill & Exhaust Pipe
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(8, 14, 3, 10);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(24, 2, 3, 12);
+      ctx.fillRect(23, 1, 5, 2);
+
+      // Cabin Glass Frame
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(30, 6, 16, 16);
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.fillRect(32, 8, 12, 12);
+
+      // Big Rear Wheel & Smaller Front Wheel
+      const drawTractorWheel = (x: number, y: number, r: number) => {
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      };
+      drawTractorWheel(14, 26, 7);
+      drawTractorWheel(38, 24, 11);
+
+      scene.textures.addCanvas('prop_tractor', canvas);
+    }
+
+    // 14. Lush Glowing Cannabis Plant (32x40)
+    {
+      const { canvas, ctx } = this.createCanvas(32, 40);
+      // Terracotta Flowerpot
+      ctx.fillStyle = '#c2410c';
+      ctx.fillRect(8, 26, 16, 12);
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(6, 24, 20, 3);
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(8, 27, 16, 2);
+
+      // Thick stalk
+      ctx.fillStyle = '#166534';
+      ctx.fillRect(15, 10, 2, 16);
+
+      // Serrated Fan Leaves (7 pointed lobes)
+      const drawLeaf = (cx: number, cy: number, rot: number) => {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 8, 2.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(-6, -0.5, 12, 1);
+        ctx.restore();
+      };
+      drawLeaf(16, 16, 0);
+      drawLeaf(16, 16, -0.6);
+      drawLeaf(16, 16, 0.6);
+      drawLeaf(16, 16, -1.2);
+      drawLeaf(16, 16, 1.2);
+      drawLeaf(16, 8, 0);
+      drawLeaf(16, 8, -0.7);
+      drawLeaf(16, 8, 0.7);
+
+      // Sparkling resin trichomes / glow
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(15, 4, 2, 2);
+      ctx.fillRect(11, 10, 2, 2);
+      ctx.fillRect(19, 10, 2, 2);
+
+      scene.textures.addCanvas('prop_weed_plant', canvas);
+    }
+
+    // 15. Bio-Hanf Smoke Lounge Upgrade (72x36)
+    {
+      const { canvas, ctx } = this.createCanvas(72, 36);
+      // Emerald Green Velvet Lounge Sofas
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(4, 10, 64, 24);
+      ctx.fillStyle = '#059669';
+      ctx.fillRect(6, 12, 60, 10);
+      ctx.fillStyle = '#34d399';
+      ctx.fillRect(8, 12, 56, 3);
+
+      // Wooden Coffee Table with Glass Herb Bowl
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(24, 20, 24, 12);
+      ctx.fillStyle = '#065f46';
+      ctx.fillRect(32, 15, 8, 5);
+      ctx.fillStyle = '#6ee7b7';
+      ctx.beginPath();
+      ctx.arc(36, 15, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      scene.textures.addCanvas('prop_smoke_lounge', canvas);
+    }
+
+    // 16. Emerald Green Cosmic Portal (36x52)
+    {
+      const { canvas, ctx } = this.createCanvas(36, 52);
+      // Wood & Moss Tech Frame
+      ctx.fillStyle = '#064e3b';
+      ctx.fillRect(2, 2, 32, 48);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(3, 3, 30, 46);
+
+      // Green Swirling Vortex
+      const radGrad = ctx.createRadialGradient(18, 26, 2, 18, 26, 16);
+      radGrad.addColorStop(0, '#ffffff');
+      radGrad.addColorStop(0.3, '#4ade80');
+      radGrad.addColorStop(0.7, '#15803d');
+      radGrad.addColorStop(1, '#064e3b');
+      ctx.fillStyle = radGrad;
+      ctx.fillRect(6, 6, 24, 40);
+
+      // Glowing Portal Text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 8px monospace';
+      ctx.fillText('FARM', 8, 28);
+      scene.textures.addCanvas('prop_portal_green', canvas);
+    }
   }
 
   // --- ITEM ICONS ---
@@ -980,6 +1346,86 @@ export class TextureGenerator {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(11, 19, 2, 2);
       scene.textures.addCanvas('item_fog_plug', canvas);
+    }
+
+    // 10. Golden Post-It Block (Scrum Master Leander)
+    {
+      const { canvas, ctx } = this.createCanvas(24, 24);
+      ctx.fillStyle = '#ca8a04';
+      ctx.fillRect(4, 5, 16, 16);
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(3, 4, 16, 16);
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(4, 5, 14, 3);
+      // Checklist marks
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(6, 10, 2, 2);
+      ctx.fillRect(10, 10, 7, 1);
+      ctx.fillRect(6, 14, 2, 2);
+      ctx.fillRect(10, 14, 7, 1);
+      scene.textures.addCanvas('item_sticky_notes', canvas);
+    }
+
+    // 11. Double Oat Espresso (Scrum Master Leander)
+    {
+      const { canvas, ctx } = this.createCanvas(24, 24);
+      // White ceramic cup
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(5, 6, 14, 14);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(6, 6, 12, 13);
+      // Cup handle
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(17, 8, 4, 8);
+      // Rich crema coffee surface
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(7, 7, 10, 4);
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(8, 8, 8, 2);
+      // Latte art heart
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(11, 8, 2, 2);
+      scene.textures.addCanvas('item_espresso', canvas);
+    }
+
+    // 12. Magic Bio Cannabis Seeds (Henning)
+    {
+      const { canvas, ctx } = this.createCanvas(24, 24);
+      // Burlap Seed Pouch
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(5, 7, 14, 14);
+      ctx.fillStyle = '#a16207';
+      ctx.fillRect(6, 8, 12, 12);
+      // Tied pouch top
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(8, 4, 8, 4);
+      // Green Leaf Stamp
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(11, 11, 2, 6);
+      ctx.fillRect(9, 13, 6, 2);
+      scene.textures.addCanvas('item_magic_seeds', canvas);
+    }
+
+    // 13. Crystal Vaporizer / Herbal Bong (Henning)
+    {
+      const { canvas, ctx } = this.createCanvas(24, 24);
+      // Glass Base Chamber
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.beginPath();
+      ctx.arc(12, 17, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // Glowing green herbal water
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(12, 18, 4, 0, Math.PI * 2);
+      ctx.fill();
+      // Glass neck
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillRect(11, 3, 3, 11);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(10, 2, 5, 2); // mouthpiece
+      scene.textures.addCanvas('item_vintage_bong', canvas);
     }
   }
 

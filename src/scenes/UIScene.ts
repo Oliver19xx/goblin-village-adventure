@@ -246,9 +246,10 @@ export class UIScene extends Phaser.Scene {
 
     const zoneNames: { [k: string]: string } = {
       hub: '🧌 Party-Hub',
-      kanal: '🎧 Kanal-Rave',
-      skatehalle: '🛹 Skatehalle',
-      autobahn: '🍬 Autobahn'
+      kanal: '🎧 Kanal',
+      coworking: '📋 Coworking',
+      autobahn: '🍬 Autobahn',
+      bauernhof: '🌿 Bauernhof'
     };
     this.zoneText.setText(zoneNames[state.currentZone] || 'Unbekannt');
 
@@ -445,6 +446,10 @@ export class UIScene extends Phaser.Scene {
       state.recruitFriend('candy');
       state.quests.get('quest_candy')!.isCompleted = true;
       SoundEngine.getInstance().playQuestComplete();
+    } else if (action === 'recruit_henning') {
+      state.recruitFriend('henning');
+      state.quests.get('quest_henning')!.isCompleted = true;
+      SoundEngine.getInstance().playQuestComplete();
     }
   }
 
@@ -478,27 +483,27 @@ export class UIScene extends Phaser.Scene {
     const { w, h, isPortrait } = this.getViewport();
 
     const modalW = isPortrait ? Math.min(355, w - 20) : Math.min(640, w - 24);
-    const modalH = isPortrait ? Math.min(480, h - 80) : Math.min(500, h - 30);
+    const modalH = isPortrait ? Math.min(540, h - 30) : Math.min(520, h - 20);
 
     this.craftingModal.setPosition(w / 2, h / 2);
 
     const bg = this.add.rectangle(0, 0, modalW, modalH, 0x0f0b1e, 0.98)
       .setStrokeStyle(2.5, 0xffd700);
 
-    const title = this.add.text(0, -modalH / 2 + 24, '🔨 WERKBANK: AUSBAU', {
+    const title = this.add.text(0, -modalH / 2 + 20, '🔨 WERKBANK: AUSBAU', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: isPortrait ? '13.5px' : '16px',
+      fontSize: isPortrait ? '13px' : '15px',
       color: '#ffd700',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const closeBtnBg = this.add.circle(modalW / 2 - 24, -modalH / 2 + 24, 13, 0x2b153b, 0.95)
+    const closeBtnBg = this.add.circle(modalW / 2 - 20, -modalH / 2 + 20, 12, 0x2b153b, 0.95)
       .setStrokeStyle(1.5, 0xff007f)
       .setInteractive({ useHandCursor: true });
 
-    const closeBtn = this.add.text(modalW / 2 - 24, -modalH / 2 + 24, '✖', {
+    const closeBtn = this.add.text(modalW / 2 - 20, -modalH / 2 + 20, '✖', {
       fontFamily: 'Outfit, sans-serif',
-      fontSize: '13px',
+      fontSize: '12px',
       color: '#ff4da6'
     }).setOrigin(0.5);
 
@@ -507,8 +512,8 @@ export class UIScene extends Phaser.Scene {
     this.craftingModal.add([bg, title, closeBtnBg, closeBtn]);
 
     const cardW = modalW - 20;
-    const cardH = isPortrait ? 70 : 58;
-    let yOffset = -modalH / 2 + 54;
+    const cardH = isPortrait ? 60 : 54;
+    let yOffset = -modalH / 2 + 42;
 
     state.craftingRecipes.forEach(recipe => {
       const cardBg = this.add.rectangle(0, yOffset + cardH / 2, cardW, cardH, 0x1a1236)
@@ -523,9 +528,9 @@ export class UIScene extends Phaser.Scene {
         icon.setScale(0.8);
       }
 
-      const nameTxt = this.add.text(-modalW / 2 + 48, yOffset + 10, recipe.name, {
+      const nameTxt = this.add.text(-modalW / 2 + 48, yOffset + 6, recipe.name, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: isPortrait ? '11px' : '13px',
+        fontSize: isPortrait ? '10.5px' : '12px',
         color: recipe.built ? '#00ff88' : '#ffffff',
         fontStyle: 'bold',
         wordWrap: { width: modalW - 145 }
@@ -537,15 +542,15 @@ export class UIScene extends Phaser.Scene {
         return `${name}: ${cur}/${c.amount}`;
       }).join(' | ');
 
-      if (recipe.requiresAllFriends && state.recruitedFriends.size < 3) {
-        costStr = `🔒 Braucht alle 3 Freunde (${state.recruitedFriends.size}/3)`;
+      if (recipe.requiresAllFriends && state.recruitedFriends.size < 4) {
+        costStr = `🔒 Braucht alle 4 Freunde (${state.recruitedFriends.size}/4)`;
       } else if (recipe.requiredFriendId && !state.isFriendRecruited(recipe.requiredFriendId)) {
         costStr = `🔒 Braucht ${recipe.requiredFriendId.toUpperCase()}`;
       }
 
-      const costTxt = this.add.text(-modalW / 2 + 48, yOffset + 36, costStr, {
+      const costTxt = this.add.text(-modalW / 2 + 48, yOffset + 28, costStr, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '9px',
+        fontSize: '8.5px',
         color: '#ffbb44',
         fontStyle: 'bold',
         wordWrap: { width: modalW - 145 }
@@ -554,24 +559,24 @@ export class UIScene extends Phaser.Scene {
       if (recipe.built) {
         const builtBadge = this.add.text(modalW / 2 - 44, yOffset + cardH / 2, '✓ GEBAUT', {
           fontFamily: 'Outfit, sans-serif',
-          fontSize: '10.5px',
+          fontSize: '10px',
           color: '#00ff88',
           fontStyle: 'bold'
         }).setOrigin(0.5);
         this.craftingModal.add([cardBg, icon, nameTxt, costTxt, builtBadge]);
       } else {
-        const canBuild = (!recipe.requiresAllFriends || state.recruitedFriends.size >= 3) &&
+        const canBuild = (!recipe.requiresAllFriends || state.recruitedFriends.size >= 4) &&
           (!recipe.requiredFriendId || state.isFriendRecruited(recipe.requiredFriendId)) &&
           recipe.costs.every(c => state.getItemCount(c.itemId) >= c.amount);
 
         // BAUEN button completely inside the card with margin
-        const btnBg = this.add.rectangle(modalW / 2 - 44, yOffset + cardH / 2, 58, 26, canBuild ? 0xff007f : 0x2d2242)
+        const btnBg = this.add.rectangle(modalW / 2 - 44, yOffset + cardH / 2, 58, 24, canBuild ? 0xff007f : 0x2d2242)
           .setStrokeStyle(1.5, canBuild ? 0xff66cc : 0x555555)
           .setInteractive({ useHandCursor: canBuild });
 
         const btnTxt = this.add.text(modalW / 2 - 44, yOffset + cardH / 2, 'BAUEN', {
           fontFamily: 'Outfit, sans-serif',
-          fontSize: '10.5px',
+          fontSize: '10px',
           color: canBuild ? '#ffffff' : '#777777',
           fontStyle: 'bold'
         }).setOrigin(0.5);
@@ -588,7 +593,7 @@ export class UIScene extends Phaser.Scene {
         this.craftingModal.add([cardBg, icon, nameTxt, costTxt, btnBg, btnTxt]);
       }
 
-      yOffset += cardH + 6;
+      yOffset += cardH + 4;
     });
   }
 
@@ -612,25 +617,25 @@ export class UIScene extends Phaser.Scene {
     const { w, h, isPortrait } = this.getViewport();
 
     const modalW = isPortrait ? Math.min(360, w - 16) : Math.min(640, w - 24);
-    const modalH = isPortrait ? Math.min(560, h - 40) : Math.min(500, h - 30);
+    const modalH = isPortrait ? Math.min(580, h - 30) : Math.min(520, h - 20);
 
     this.questModal.setPosition(w / 2, h / 2);
 
     const bg = this.add.rectangle(0, 0, modalW, modalH, 0x100a26, 0.98)
       .setStrokeStyle(2.5, 0x00ffcc);
 
-    const title = this.add.text(0, -modalH / 2 + 22, '📜 QUESTS & FREUNDE', {
+    const title = this.add.text(0, -modalH / 2 + 20, '📜 QUESTS & FREUNDE', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: isPortrait ? '13px' : '15px',
       color: '#00ffcc',
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const closeBtnBg = this.add.circle(modalW / 2 - 22, -modalH / 2 + 22, 12, 0x23143d, 0.95)
+    const closeBtnBg = this.add.circle(modalW / 2 - 20, -modalH / 2 + 20, 12, 0x23143d, 0.95)
       .setStrokeStyle(1.5, 0xff007f)
       .setInteractive({ useHandCursor: true });
 
-    const closeBtn = this.add.text(modalW / 2 - 22, -modalH / 2 + 22, '✖', {
+    const closeBtn = this.add.text(modalW / 2 - 20, -modalH / 2 + 20, '✖', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '12px',
       color: '#ff4da6'
@@ -641,8 +646,8 @@ export class UIScene extends Phaser.Scene {
     this.questModal.add([bg, title, closeBtnBg, closeBtn]);
 
     const cardW = modalW - 16;
-    const cardH = isPortrait ? 76 : 68;
-    let yOffset = -modalH / 2 + 46;
+    const cardH = isPortrait ? 68 : 62;
+    let yOffset = -modalH / 2 + 40;
 
     state.quests.forEach(quest => {
       const isFriendQuest = quest.friendId !== 'valentin';
@@ -653,18 +658,18 @@ export class UIScene extends Phaser.Scene {
       const cardBg = this.add.rectangle(0, yOffset + cardH / 2, cardW, cardH, 0x1b1338)
         .setStrokeStyle(1.5, borderColor);
 
-      const titleTxt = this.add.text(-modalW / 2 + 12, yOffset + 8, quest.title, {
+      const titleTxt = this.add.text(-modalW / 2 + 12, yOffset + 6, quest.title, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: isPortrait ? '10.5px' : '12px',
+        fontSize: isPortrait ? '10px' : '11.5px',
         color: isCompleted ? '#00ff88' : '#ffd700',
         fontStyle: 'bold',
         wordWrap: { width: modalW - 90 }
       });
 
       const stepsStr = quest.steps.map(s => `${s.isCompleted ? '☑' : '☐'} ${s.text}`).join('\n');
-      const stepsTxt = this.add.text(-modalW / 2 + 12, yOffset + 24, stepsStr, {
+      const stepsTxt = this.add.text(-modalW / 2 + 12, yOffset + 22, stepsStr, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: isPortrait ? '8.5px' : '9.5px',
+        fontSize: isPortrait ? '8px' : '9px',
         color: '#ffffff',
         wordWrap: { width: modalW - 28 },
         lineSpacing: 2
@@ -680,24 +685,24 @@ export class UIScene extends Phaser.Scene {
         } else if (state.isCakeBaked) {
           badgeText = '✨ PLATZIEREN';
           badgeColor = '#ff00ea';
-        } else if (state.recruitedFriends.size >= 3) {
+        } else if (state.recruitedFriends.size >= 4) {
           badgeText = '🔨 BACKEN';
           badgeColor = '#ffd700';
         } else {
-          badgeText = `⏳ FREUNDE (${state.recruitedFriends.size}/3)`;
+          badgeText = `⏳ FREUNDE (${state.recruitedFriends.size}/4)`;
           badgeColor = '#00ffcc';
         }
       }
 
-      const statusBadge = this.add.text(modalW / 2 - 40, yOffset + 12, badgeText, {
+      const statusBadge = this.add.text(modalW / 2 - 40, yOffset + 10, badgeText, {
         fontFamily: 'Outfit, sans-serif',
-        fontSize: isPortrait ? '8.5px' : '9.5px',
+        fontSize: isPortrait ? '8px' : '9px',
         color: badgeColor,
         fontStyle: 'bold'
       }).setOrigin(0.5);
 
       this.questModal.add([cardBg, titleTxt, stepsTxt, statusBadge]);
-      yOffset += cardH + 6;
+      yOffset += cardH + 4;
     });
   }
 
@@ -728,15 +733,16 @@ export class UIScene extends Phaser.Scene {
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    const spacing = isPortrait ? 38 : 70;
-    const vSprite = this.add.sprite(-spacing * 1.5, -modalH / 2 + 75, 'valentin_dance').setScale(1.45);
-    const oSprite = this.add.sprite(-spacing * 0.5, -modalH / 2 + 75, 'olli_dance').setScale(1.45);
-    const lSprite = this.add.sprite(spacing * 0.5, -modalH / 2 + 75, 'leander_dance').setScale(1.45);
-    const cSprite = this.add.sprite(spacing * 1.5, -modalH / 2 + 75, 'candy_dance').setScale(1.45);
+    const spacing = isPortrait ? 30 : 54;
+    const vSprite = this.add.sprite(-spacing * 2, -modalH / 2 + 75, 'valentin_dance').setScale(1.3);
+    const oSprite = this.add.sprite(-spacing * 1, -modalH / 2 + 75, 'olli_dance').setScale(1.3);
+    const lSprite = this.add.sprite(0, -modalH / 2 + 75, 'leander_dance').setScale(1.3);
+    const cSprite = this.add.sprite(spacing * 1, -modalH / 2 + 75, 'candy_dance').setScale(1.3);
+    const hSprite = this.add.sprite(spacing * 2, -modalH / 2 + 75, 'henning_dance').setScale(1.3);
 
     const cakeImg = this.add.image(0, -modalH / 2 + 140, 'prop_birthday_cake').setScale(1.25);
 
-    const msg = this.add.text(0, modalH / 2 - 80, 'Du hast alle deine Freunde gefunden,\nden Party-Platz ausgebaut und den legendärsten\nGoblin-Rave aller Zeiten gestartet!', {
+    const msg = this.add.text(0, modalH / 2 - 80, 'Du hast alle deine 4 Freunde gefunden,\nden Party-Platz ausgebaut und den legendärsten\nGoblin-Rave aller Zeiten gestartet!', {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '11px',
       color: '#ffffff',
@@ -763,7 +769,7 @@ export class UIScene extends Phaser.Scene {
       worldScene.triggerFinaleCelebration();
     });
 
-    this.finaleModal.add([bg, title, vSprite, oSprite, lSprite, cSprite, cakeImg, msg, continueBtnBg, continueBtnTxt]);
+    this.finaleModal.add([bg, title, vSprite, oSprite, lSprite, cSprite, hSprite, cakeImg, msg, continueBtnBg, continueBtnTxt]);
   }
 
   // --- TOAST NOTIFICATIONS ---

@@ -1,4 +1,4 @@
-export type ZoneId = 'hub' | 'kanal' | 'skatehalle' | 'autobahn';
+export type ZoneId = 'hub' | 'kanal' | 'coworking' | 'autobahn' | 'bauernhof';
 
 export interface Item {
   id: string;
@@ -40,7 +40,7 @@ export interface Quest {
 
 export interface DialogueNode {
   id: string;
-  speaker: 'valentin' | 'olli' | 'leander' | 'candy' | 'narrator';
+  speaker: 'valentin' | 'olli' | 'leander' | 'candy' | 'henning' | 'narrator';
   speakerName: string;
   text: string;
   options?: {

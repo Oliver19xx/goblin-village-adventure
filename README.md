@@ -25,30 +25,32 @@
 
 ## 📖 Die Geschichte
 
-Heute feiert der Goblin **Valentin** seinen Geburtstag! Um die legendärste Geburtstagsparty aller Zeiten zu schmeißen, muss Valentin seinen Bauwagenplatz in einen Rave-Hotspot verwandeln. Doch seine besten Freunde sind noch verstreut auf geheimen Underground-Raves in der ganzen Stadt unterwegs:
+Heute feiert der Goblin **Valentin** seinen Geburtstag! Um die legendärste Geburtstagsparty aller Zeiten zu schmeißen, muss Valentin seinen Bauwagenplatz in einen Rave-Hotspot verwandeln. Doch seine besten Freunde sind noch verstreut in der ganzen Stadt unterwegs:
 
-1. **🎧 Olli (Kanal-Rave)**: Hat sein Master-Vinyl und das vergoldete Klinkenkabel im Schilf verloren.
-2. **🛹 Leander (Skatehalle)**: Braucht High-Speed Keramik-Rollen und eiskalte Goblin-Energy für sein Skateboard.
+1. **🎧 Olli (Kanal-Rave)**: Hat seine Master-Vinyl und das vergoldete Klinkenkabel im Schilf verloren.
+2. **📋 Leander (Coworking-Bunker)**: Steckt als Agile Scrum Master im Sprint-Planning fest – er braucht goldene Post-Its und doppelten Hafer-Espresso, um die Velocity zu retten.
 3. **🍬 Candy (Autobahnbrücke)**: Sucht eine Zündkerze für ihre Nebelmaschine und Glitzer-Sirup für den leuchtenden Geburtstagspunch.
+4. **🌿 Henning (Hanf-Bauernhof)**: Betreibt den Cannabis Social Club (CSC) „Goblin Green“ und braucht Bio-Gourmet-Saatgut sowie seinen Kristall-Vaporizer für die Ernte.
 
-Reise durch die Teleport-Portale zu den Raves, hilf deinen Freunden bei ihren Quests, sammle Bauholz, Kabel und Knicklichter und baue im Party-Hub das DJ-Pult, die Skater-Lounge, die Glow-Drink-Bar und die Discokugeln auf!
+Reise durch die Teleport-Portale zu den Zonen, hilf deinen Freunden bei ihren Quests, sammle Bauholz, Kabel und Knicklichter und baue im Party-Hub das DJ-Pult, die Agile Retro-Lounge mit Tischkicker, die Glow-Drink-Bar, die Bio-Hanf-Lounge und die Discokugeln auf!
 
 ---
 
 ## 🎂 Das zweistufige Geburtstags-Finale
 
-1. **🔨 Kuchen backen:** Backe an der Werkbank im Party-Hub den gigantischen 3-Tier-Geburtstagskuchen.
+1. **🔨 Kuchen backen:** Backe an der Werkbank im Party-Hub den gigantischen 3-Tier-Geburtstagskuchen (erfordert alle 4 Freunde).
 2. **🎉 Partytisch in der Mitte:** Trage den fertigen Kuchen zum festlich geschmückten Tisch im Zentrum des Bauwagenplatzes.
-3. **🪩 Die Party des Jahrhunderts:** Sobald der Kuchen aufgestellt ist, starten alle Freunde den synchronen Goblin-Tanz, Kerzenlichter und Konfetti-Feuerwerk erleuchten den Platz und die triumphale Rave-Fanfare ertönt!
+3. **🪩 Die Party des Jahrhunderts:** Sobald der Kuchen aufgestellt ist, starten alle 4 Freunde den synchronen Goblin-Tanz, Kerzenlichter und Konfetti-Feuerwerk erleuchten den Platz und die triumphale Rave-Fanfare ertönt!
 
 ---
 
-## 🗺️ Die Zonen
+## 🗺️ Die 5 Zonen
 
-- **🧌 Valentins Party-Hub (Bauwagenplatz):** Dein Basislager mit Werkbank, Portalen, zentralem Partytisch und erweiterbarer Party-Dekoration.
+- **🧌 Valentins Party-Hub (Bauwagenplatz):** Dein Basislager mit Werkbank, 4 Teleport-Portalen, zentralem Partytisch und erweiterbarer Party-Dekoration.
 - **🎧 Kanal-Open-Air:** Gemütlicher Rave am Wasser mit Schilf, Bootwrack und Chillout-Klängen.
-- **🛹 Skatehalle:** Warehouse mit Halfpipe-Rampen, Quarterpipes und schnellen Skate-Vibes.
+- **📋 Coworking-Bunker:** Modernes Agile-Office mit Kanban-Boards, Standup-Charts und Barista-Ecke.
 - **🍬 Autobahnbrücke:** Untergrund-Rave mit Betonpfeilern, Stroboskop-Lichtern und Nebelwerfern.
+- **🌿 Hanf-Bauernhof & Social Club:** Rustikale Scheune, Traktor und leuchtende Bio-Hanfpflanzen im CSC „Goblin Green“.
 
 ---
 
@@ -83,6 +85,7 @@ Reise durch die Teleport-Portale zu den Raves, hilf deinen Freunden bei ihren Qu
   - 🎸 *Ollis Bassline* (Freigeschaltet nach Ollis Quest)
   - 🎹 *Leanders Lead-Synth* (Freigeschaltet nach Leanders Quest)
   - ✨ *Candys Arpeggio-Synth* (Freigeschaltet nach Candys Quest)
+  - 🌿 *Hennings Dub/Reggae-Chords* (Freigeschaltet nach Hennings Quest)
   - 🎺 *Geburtstags-Fanfare & Finale-Akkorde* (Beim Platzieren des Kuchens)
 - **LocalStorage & JSON SaveSystem** – Automatisches Speichern des Spielstands sowie JSON-Export/Import.
 - **Open Graph & Twitter Cards** – Rich Media Vorschaukarten für WhatsApp, iMessage, Discord, Twitter/X & Co.

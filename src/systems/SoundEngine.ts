@@ -15,6 +15,7 @@ export class SoundEngine {
   public enableBass: boolean = false;     // Olli's layer
   public enableLead: boolean = false;     // Leander's layer
   public enableArp: boolean = false;      // Candy's layer
+  public enableDub: boolean = false;      // Henning's Dub/Reggae layer
   public enableFinale: boolean = false;   // Birthday Finale Drop!
 
   private currentStep: number = 0;
@@ -188,7 +189,16 @@ export class SoundEngine {
       this.playSynthNote(now, freq, 0.08, 'triangle', 0.10);
     }
 
-    // 5. Birthday Finale Rave Chords
+    // 5. Dub / Reggae Offbeat Skank Chords (Henning's Layer)
+    if (this.enableDub || this.enableFinale) {
+      if (this.currentStep % 4 === 2) {
+        this.playSynthNote(now, 329.63, 0.08, 'sawtooth', 0.08); // E4
+        this.playSynthNote(now, 392.00, 0.08, 'sawtooth', 0.08); // G4
+        this.playSynthNote(now, 493.88, 0.08, 'sawtooth', 0.08); // B4
+      }
+    }
+
+    // 6. Birthday Finale Rave Chords
     if (this.enableFinale && this.currentStep % 4 === 0) {
       this.playSynthNote(now, 261.63 * 2, 0.35, 'sawtooth', 0.07);
       this.playSynthNote(now, 329.63 * 2, 0.35, 'sawtooth', 0.07);

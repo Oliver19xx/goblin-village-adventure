@@ -34,15 +34,17 @@ export class GameState extends Phaser.Events.EventEmitter {
 
   private initDefaultItems(): void {
     const itemCatalog: Item[] = [
-      { id: 'wood', name: 'Bauholz-Balken', description: 'Stabile Bretter für Boxen, Bar & Möbel.', category: 'material', iconTexture: 'item_wood', count: 0 },
+      { id: 'wood', name: 'Bauholz-Balken', description: 'Stabile Bretter für Boxen, Bar, Kicker & Lounges.', category: 'material', iconTexture: 'item_wood', count: 0 },
       { id: 'scrap', name: 'Elektronik-Kabel', description: 'Geflochtene Kabel & Platinen für die Soundanlage.', category: 'material', iconTexture: 'item_scrap', count: 0 },
       { id: 'glowstick', name: 'Neon-Knicklicht', description: 'Leuchtet giftgrün und pink im Dunkeln!', category: 'material', iconTexture: 'item_glowstick', count: 0 },
       { id: 'vinyl', name: 'Ollis Master-Vinyl', description: 'Die legendäre 180g Rave-Platte mit dem perfekten Beat.', category: 'quest', iconTexture: 'item_vinyl', count: 0 },
       { id: 'audio_cable', name: 'Gold-Klinkenkabel', description: 'Vergoldetes 6.3mm Kabel für kristallklaren Sound.', category: 'quest', iconTexture: 'item_audio_cable', count: 0 },
-      { id: 'skate_wheels', name: 'High-Speed Rollen', description: 'Keramik-Kugellager für 360-Flips in der Halfpipe.', category: 'quest', iconTexture: 'item_skate_wheels', count: 0 },
-      { id: 'energy_drink', name: 'Goblin-Energy Dose', description: 'Schmeckt nach grünen Äpfeln & reinem Adrenalin.', category: 'quest', iconTexture: 'item_energy_drink', count: 0 },
+      { id: 'sticky_notes', name: 'Goldener Post-It-Block', description: 'Die entscheidenden User Stories für das Geburtstags-Release.', category: 'quest', iconTexture: 'item_sticky_notes', count: 0 },
+      { id: 'espresso', name: 'Doppelter Hafer-Espresso', description: 'Treibt die Team-Velocity auf unglaubliche 120%.', category: 'quest', iconTexture: 'item_espresso', count: 0 },
       { id: 'glow_syrup', name: 'Glitzer-Sirup', description: 'Candys Geheimzutat für den leuchtenden Geburtstagspunch.', category: 'quest', iconTexture: 'item_glow_syrup', count: 0 },
       { id: 'fog_plug', name: 'Nebelmaschinen-Zündkerze', description: 'Bringt die Nebelwerfer wieder auf 100% Dampf.', category: 'quest', iconTexture: 'item_fog_plug', count: 0 },
+      { id: 'magic_seeds', name: 'Bio-Gourmet-Saatgut', description: 'Ausgewähltes Bio-Saatgut für den Cannabis Social Club.', category: 'quest', iconTexture: 'item_magic_seeds', count: 0 },
+      { id: 'vintage_bong', name: 'Kristall-Vaporizer', description: 'Edler Glaskolben für reines Kräuteraroma & Entspannung.', category: 'quest', iconTexture: 'item_vintage_bong', count: 0 },
     ];
 
     itemCatalog.forEach(item => this.inventory.set(item.id, { ...item }));
@@ -66,15 +68,15 @@ export class GameState extends Phaser.Events.EventEmitter {
     this.quests.set('quest_leander', {
       id: 'quest_leander',
       friendId: 'leander',
-      title: 'Leanders Skatehallen-Tuning',
-      description: 'Leander kann ohne neue Skateboard-Rollen und eine Dose Goblin-Energy die Skatehalle nicht verlassen.',
+      title: 'Leanders Sprint-Blocker-Befreiung',
+      description: 'Leander steckt im Sprint-Planning fest. Beseitige die Impediments mit goldenen Post-Its und doppeltem Hafer-Espresso.',
       steps: [
-        { id: 'wheels', text: 'High-Speed Rollen in der Werkstatt finden', isCompleted: false },
-        { id: 'energy', text: 'Goblin-Energy Drink im Snack-Automaten finden', isCompleted: false },
-        { id: 'return', text: 'Sprich wieder mit Leander in der Skatehalle', isCompleted: false }
+        { id: 'notes', text: 'Goldenen Post-It-Block am Kanban-Board finden', isCompleted: false },
+        { id: 'espresso', text: 'Doppelten Hafer-Espresso am Barista-Tresen holen', isCompleted: false },
+        { id: 'return', text: 'Sprich wieder mit Scrum Master Leander', isCompleted: false }
       ],
       isCompleted: false,
-      rewardText: 'Leander feiert mit und bringt Skate-Vibes auf den Bauwagenplatz!'
+      rewardText: 'Leander deployt die Retro-Lounge & den Kicker zum Party-Hub!'
     });
 
     this.quests.set('quest_candy', {
@@ -91,13 +93,27 @@ export class GameState extends Phaser.Events.EventEmitter {
       rewardText: 'Candy bringt die Lichterketten, Laser & die Bar zu Valentin!'
     });
 
+    this.quests.set('quest_henning', {
+      id: 'quest_henning',
+      friendId: 'henning',
+      title: 'Hennings Ernte-Festival & CSC-Rettung',
+      description: 'Auf dem Bio-Bauernhof braucht Henning Zauber-Saatgut und den Kristall-Vaporizer für den Cannabis Social Club.',
+      steps: [
+        { id: 'seeds', text: 'Bio-Gourmet-Saatgut im Gewächshaus finden', isCompleted: false },
+        { id: 'bong', text: 'Kristall-Vaporizer beim alten Traktor bergen', isCompleted: false },
+        { id: 'return', text: 'Sprich wieder mit Bio-Bauer Henning', isCompleted: false }
+      ],
+      isCompleted: false,
+      rewardText: 'Henning bringt die Bio-Hanf-Lounge & aromatischen Kräuternebel zum Rave!'
+    });
+
     this.quests.set('quest_finale', {
       id: 'quest_finale',
       friendId: 'valentin',
       title: '🎂 Das Große Geburtstags-Finale',
       description: 'Versammle alle Freunde, backe den Geburtstagskuchen und platziere ihn auf dem Tisch in der Mitte!',
       steps: [
-        { id: 'friends', text: 'Alle 3 Freunde (Olli, Leander, Candy) zur Party holen', isCompleted: false },
+        { id: 'friends', text: 'Alle 4 Freunde (Olli, Leander, Candy, Henning) finden', isCompleted: false },
         { id: 'bake_cake', text: 'Geburtstagskuchen an der Werkbank backen', isCompleted: false },
         { id: 'place_cake', text: 'Kuchen auf dem Tisch in der Mitte platzieren', isCompleted: false }
       ],
@@ -138,17 +154,17 @@ export class GameState extends Phaser.Events.EventEmitter {
       },
       {
         id: 'upgrade_chill',
-        name: 'Skater-Lounge & Mini-Ramp',
-        description: 'Wird freigeschaltet, wenn Leander gerettet ist. Gemütliche Sofas & Rampen.',
-        icon: 'prop_skate_ramp',
+        name: 'Agile Retro-Lounge & Kanban-Tischkicker',
+        description: 'Wird freigeschaltet, wenn Scrum Master Leander da ist. Tischkicker & Sitzsäcke!',
+        icon: 'prop_retro_lounge',
         category: 'activity',
         costs: [
-          { itemId: 'wood', amount: 5 },
-          { itemId: 'scrap', amount: 2 }
+          { itemId: 'wood', amount: 4 },
+          { itemId: 'scrap', amount: 3 }
         ],
         requiredFriendId: 'leander',
         built: false,
-        unlockText: 'Die Skater-Lounge ist fertig! Leander zeigt fette Tricks!'
+        unlockText: 'Die Agile Retro-Lounge steht! Leander kickert im 120% Sprint!'
       },
       {
         id: 'upgrade_bar',
@@ -165,9 +181,23 @@ export class GameState extends Phaser.Events.EventEmitter {
         unlockText: 'Candys Glow-Bar ist eröffnet! Der Glitzer-Punch perlt!'
       },
       {
+        id: 'upgrade_smoke',
+        name: '🌿 Bio-Hanf-Lounge & Kräuter-Nebel',
+        description: 'Wird freigeschaltet, wenn Henning da ist. Entspannung pur & feinstes Bio-Aroma!',
+        icon: 'prop_smoke_lounge',
+        category: 'drinks',
+        costs: [
+          { itemId: 'wood', amount: 3 },
+          { itemId: 'glowstick', amount: 3 }
+        ],
+        requiredFriendId: 'henning',
+        built: false,
+        unlockText: 'Die Bio-Hanf-Lounge ist eröffnet! Aromatischer Kräuternebel hüllt den Platz ein!'
+      },
+      {
         id: 'upgrade_cake',
         name: 'Der Gigantische Geburtstagskuchen 🎂',
-        description: 'Das krönende Meisterwerk für Valentins Geburtstag! Wird freigeschaltet, wenn Olli, Leander & Candy da sind.',
+        description: 'Das krönende Meisterwerk für Valentins Geburtstag! Wird freigeschaltet, wenn Olli, Leander, Candy & Henning da sind.',
         icon: 'prop_birthday_cake',
         category: 'finale',
         costs: [
@@ -213,10 +243,11 @@ export class GameState extends Phaser.Events.EventEmitter {
     if (friendId === 'olli') SoundEngine.getInstance().enableBass = true;
     if (friendId === 'leander') SoundEngine.getInstance().enableLead = true;
     if (friendId === 'candy') SoundEngine.getInstance().enableArp = true;
+    if (friendId === 'henning') SoundEngine.getInstance().enableDub = true;
 
-    // Check Finale Quest Step 1 (All 3 friends recruited)
+    // Check Finale Quest Step 1 (All 4 friends recruited)
     const finaleQuest = this.quests.get('quest_finale');
-    if (finaleQuest && this.recruitedFriends.size >= 3) {
+    if (finaleQuest && this.recruitedFriends.size >= 4) {
       finaleQuest.steps[0].isCompleted = true;
     }
 
@@ -232,8 +263,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     const recipe = this.craftingRecipes.find(r => r.id === recipeId);
     if (!recipe || recipe.built) return false;
 
-    // Check all friends requirement (for Birthday Cake)
-    if (recipe.requiresAllFriends && this.recruitedFriends.size < 3) {
+    // Check all friends requirement (for Birthday Cake - all 4 friends)
+    if (recipe.requiresAllFriends && this.recruitedFriends.size < 4) {
       return false;
     }
 
@@ -303,8 +334,8 @@ export class GameState extends Phaser.Events.EventEmitter {
     // Check Leander's Quest
     const leanderQuest = this.quests.get('quest_leander');
     if (leanderQuest && !leanderQuest.isCompleted) {
-      if (this.getItemCount('skate_wheels') > 0) leanderQuest.steps[0].isCompleted = true;
-      if (this.getItemCount('energy_drink') > 0) leanderQuest.steps[1].isCompleted = true;
+      if (this.getItemCount('sticky_notes') > 0) leanderQuest.steps[0].isCompleted = true;
+      if (this.getItemCount('espresso') > 0) leanderQuest.steps[1].isCompleted = true;
       if (leanderQuest.steps[0].isCompleted && leanderQuest.steps[1].isCompleted) {
         leanderQuest.steps[2].isCompleted = true;
       }
@@ -320,10 +351,20 @@ export class GameState extends Phaser.Events.EventEmitter {
       }
     }
 
+    // Check Henning's Quest
+    const henningQuest = this.quests.get('quest_henning');
+    if (henningQuest && !henningQuest.isCompleted) {
+      if (this.getItemCount('magic_seeds') > 0) henningQuest.steps[0].isCompleted = true;
+      if (this.getItemCount('vintage_bong') > 0) henningQuest.steps[1].isCompleted = true;
+      if (henningQuest.steps[0].isCompleted && henningQuest.steps[1].isCompleted) {
+        henningQuest.steps[2].isCompleted = true;
+      }
+    }
+
     // Check Finale Quest
     const finaleQuest = this.quests.get('quest_finale');
     if (finaleQuest) {
-      if (this.recruitedFriends.size >= 3) finaleQuest.steps[0].isCompleted = true;
+      if (this.recruitedFriends.size >= 4) finaleQuest.steps[0].isCompleted = true;
       if (this.isCakeBaked) finaleQuest.steps[1].isCompleted = true;
       if (this.isCakePlaced) {
         finaleQuest.steps[2].isCompleted = true;
@@ -335,13 +376,13 @@ export class GameState extends Phaser.Events.EventEmitter {
   }
 
   public getPartyProgress(): number {
-    // 3 friends (20% each = 60%) + 4 upgrades (7.5% each = 30%) + cake baked (5%) + cake placed (5%) = 100%
+    // 4 friends (15% each = 60%) + 5 upgrades (6% each = 30%) + cake baked (5%) + cake placed (5%) = 100%
     let progress = 0;
-    progress += this.recruitedFriends.size * 20;
+    progress += this.recruitedFriends.size * 15;
 
-    const baseUpgrades = ['upgrade_lights', 'upgrade_sound', 'upgrade_chill', 'upgrade_bar'];
+    const baseUpgrades = ['upgrade_lights', 'upgrade_sound', 'upgrade_chill', 'upgrade_bar', 'upgrade_smoke'];
     baseUpgrades.forEach(u => {
-      if (this.craftedUpgrades.has(u)) progress += 7.5;
+      if (this.craftedUpgrades.has(u)) progress += 6;
     });
 
     if (this.isCakeBaked) progress += 5;
@@ -369,6 +410,7 @@ export class GameState extends Phaser.Events.EventEmitter {
     SoundEngine.getInstance().enableBass = false;
     SoundEngine.getInstance().enableLead = false;
     SoundEngine.getInstance().enableArp = false;
+    SoundEngine.getInstance().enableDub = false;
     SoundEngine.getInstance().enableFinale = false;
     
     this.initDefaultItems();

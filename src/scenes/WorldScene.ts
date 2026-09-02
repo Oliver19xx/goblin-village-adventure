@@ -64,10 +64,11 @@ export class WorldScene extends Phaser.Scene {
       state.recruitFriend('olli');
       state.recruitFriend('leander');
       state.recruitFriend('candy');
+      state.recruitFriend('henning');
       state.craftingRecipes.forEach(r => { r.built = true; state.craftedUpgrades.add(r.id); });
     }
 
-    if (targetZone && (targetZone === 'kanal' || targetZone === 'skatehalle' || targetZone === 'autobahn' || targetZone === 'hub')) {
+    if (targetZone && (targetZone === 'kanal' || targetZone === 'coworking' || targetZone === 'autobahn' || targetZone === 'bauernhof' || targetZone === 'hub')) {
       state.currentZone = targetZone;
     }
 
@@ -130,11 +131,14 @@ export class WorldScene extends Phaser.Scene {
       case 'kanal':
         this.buildKanalZone();
         break;
-      case 'skatehalle':
-        this.buildSkatehalleZone();
+      case 'coworking':
+        this.buildCoworkingZone();
         break;
       case 'autobahn':
         this.buildAutobahnZone();
+        break;
+      case 'bauernhof':
+        this.buildBauernhofZone();
         break;
     }
 
@@ -216,10 +220,11 @@ export class WorldScene extends Phaser.Scene {
       this.hubUpgrades.push(cake);
     }
 
-    // Portals to the 3 Raves
-    this.createPortal(840, 140, 'kanal', '🎧 ZUM KANAL-RAVE\n(Olli)');
-    this.createPortal(840, 320, 'skatehalle', '🛹 ZUR SKATEHALLE\n(Leander)');
-    this.createPortal(840, 500, 'autobahn', '🍬 ZUR AUTOBAHN-BRÜCKE\n(Candy)');
+    // Portals to all 4 Friends' Locations
+    this.createPortal(840, 110, 'kanal', '🎧 ZUM KANAL-RAVE\n(Olli)');
+    this.createPortal(840, 240, 'coworking', '📋 ZUM COWORKING\n(Leander)');
+    this.createPortal(840, 370, 'autobahn', '🍬 ZUR AUTOBAHN\n(Candy)');
+    this.createPortal(840, 500, 'bauernhof', '🌿 ZUM BAUERNHOF\n(Henning)', 'prop_portal_green');
 
     // Render Friends if recruited
     if (state.isFriendRecruited('olli')) {
@@ -227,12 +232,16 @@ export class WorldScene extends Phaser.Scene {
       this.npcs.push(olliNpc);
     }
     if (state.isFriendRecruited('leander')) {
-      const leanderNpc = new NPC(this, 580, 220, 'leander', '🛹 Leander', true);
+      const leanderNpc = new NPC(this, 580, 220, 'leander', '📋 Leander', true);
       this.npcs.push(leanderNpc);
     }
     if (state.isFriendRecruited('candy')) {
       const candyNpc = new NPC(this, 480, 180, 'candy', '🍬 Candy', true);
       this.npcs.push(candyNpc);
+    }
+    if (state.isFriendRecruited('henning')) {
+      const henningNpc = new NPC(this, 360, 420, 'henning', '🌿 Henning', true);
+      this.npcs.push(henningNpc);
     }
 
     // Spawn Respawning Material nodes
@@ -311,12 +320,12 @@ export class WorldScene extends Phaser.Scene {
     this.spawnMaterialItem('kanal_glow_1', 'glowstick', 580, 360, 'Wasserfestes Knicklicht');
   }
 
-  // --- 3. SKATEHALLE ZONE (Leanders Rave) ---
-  private buildSkatehalleZone(): void {
-    // Concrete floor
+  // --- 3. COWORKING-BUNKER ZONE (Leanders Agile Space) ---
+  private buildCoworkingZone(): void {
+    // Tech Wood Parquet floor
     for (let x = 0; x < 960; x += 32) {
       for (let y = 0; y < 640; y += 32) {
-        const tile = this.add.image(x + 16, y + 16, 'tile_concrete').setDepth(0);
+        const tile = this.add.image(x + 16, y + 16, 'tile_coworking').setDepth(0);
         this.zoneObjects.push(tile);
       }
     }
@@ -331,12 +340,12 @@ export class WorldScene extends Phaser.Scene {
       this.addWall(944, y + 16);
     }
 
-    // Skate Ramps & Props
-    const ramp1 = this.obstacles.create(280, 160, 'prop_skate_ramp');
-    ramp1.setDepth(5).refreshBody();
+    // Kanban Boards & Sprint Props
+    const board1 = this.obstacles.create(300, 160, 'prop_kanban_board');
+    board1.setDepth(5).refreshBody();
 
-    const ramp2 = this.obstacles.create(680, 160, 'prop_skate_ramp');
-    ramp2.setDepth(5).refreshBody();
+    const board2 = this.obstacles.create(660, 160, 'prop_kanban_board');
+    board2.setDepth(5).refreshBody();
 
     // Portal back to Hub
     this.createPortal(100, 320, 'hub', '🧌 ZURÜCK ZUM HUB\n(Bauwagenplatz)');
@@ -344,22 +353,22 @@ export class WorldScene extends Phaser.Scene {
     // Leander NPC
     const state = GameState.getInstance();
     if (!state.isFriendRecruited('leander')) {
-      const leanderNpc = new NPC(this, 480, 280, 'leander', '🛹 Leander (Skater)');
+      const leanderNpc = new NPC(this, 480, 280, 'leander', '📋 Leander (Scrum Master)');
       this.npcs.push(leanderNpc);
     }
 
     // Quest Items
-    if (state.getItemCount('skate_wheels') === 0 && !state.isFriendRecruited('leander')) {
-      this.spawnQuestItem('quest_item_wheels', 'skate_wheels', 780, 480, 'High-Speed Rollen');
+    if (state.getItemCount('sticky_notes') === 0 && !state.isFriendRecruited('leander')) {
+      this.spawnQuestItem('quest_item_notes', 'sticky_notes', 780, 480, 'Goldener Post-It-Block');
     }
-    if (state.getItemCount('energy_drink') === 0 && !state.isFriendRecruited('leander')) {
-      this.spawnQuestItem('quest_item_energy', 'energy_drink', 240, 480, 'Goblin-Energy Dose');
+    if (state.getItemCount('espresso') === 0 && !state.isFriendRecruited('leander')) {
+      this.spawnQuestItem('quest_item_espresso', 'espresso', 240, 480, 'Doppelter Hafer-Espresso');
     }
 
     // Materials
-    this.spawnMaterialItem('skate_wood_1', 'wood', 380, 450, 'Skate-Sperrholz');
-    this.spawnMaterialItem('skate_scrap_1', 'scrap', 580, 490, 'Kugellager & Schrauben');
-    this.spawnMaterialItem('skate_glow_1', 'glowstick', 820, 220, 'Neon-Griptape-Licht');
+    this.spawnMaterialItem('cowork_wood_1', 'wood', 380, 450, 'Whiteboard-Holz');
+    this.spawnMaterialItem('cowork_scrap_1', 'scrap', 580, 490, 'Netzwerkkabel & Adapter');
+    this.spawnMaterialItem('cowork_glow_1', 'glowstick', 820, 220, 'Neon-Marker-Licht');
   }
 
   // --- 4. AUTOBAHNBRÜCKE ZONE (Candys Rave) ---
@@ -438,6 +447,74 @@ export class WorldScene extends Phaser.Scene {
     }).setDepth(20);
   }
 
+  // --- 5. HANF-BAUERNHOF ZONE (Hennings CSC Farm) ---
+  private buildBauernhofZone(): void {
+    // Rich farm soil
+    for (let x = 0; x < 960; x += 32) {
+      for (let y = 0; y < 640; y += 32) {
+        const tile = this.add.image(x + 16, y + 16, 'tile_farm').setDepth(0);
+        this.zoneObjects.push(tile);
+      }
+    }
+
+    // Boundaries
+    for (let x = 0; x < 960; x += 32) {
+      this.addWall(x + 16, 16);
+      this.addWall(x + 16, 624);
+    }
+    for (let y = 32; y < 608; y += 32) {
+      this.addWall(16, y + 16);
+      this.addWall(944, y + 16);
+    }
+
+    // Rustic Red Barn & Green Tractor Props
+    const barn = this.obstacles.create(300, 160, 'prop_barn');
+    barn.setDepth(5).refreshBody();
+
+    const tractor = this.obstacles.create(660, 160, 'prop_tractor');
+    tractor.setDepth(5).refreshBody();
+
+    // Lush Cannabis Plants along the field
+    const plant1 = this.add.image(200, 360, 'prop_weed_plant').setDepth(4);
+    const plant2 = this.add.image(760, 360, 'prop_weed_plant').setDepth(4);
+    const plant3 = this.add.image(480, 480, 'prop_weed_plant').setDepth(4);
+    this.zoneObjects.push(plant1, plant2, plant3);
+
+    // Green Portal back to Hub
+    this.createPortal(100, 320, 'hub', '🧌 ZURÜCK ZUM HUB\n(Bauwagenplatz)', 'prop_portal_green');
+
+    // Henning NPC
+    const state = GameState.getInstance();
+    if (!state.isFriendRecruited('henning')) {
+      const henningNpc = new NPC(this, 480, 280, 'henning', '🌿 Henning (CSC-Host)');
+      this.npcs.push(henningNpc);
+    }
+
+    // Quest Items
+    if (state.getItemCount('magic_seeds') === 0 && !state.isFriendRecruited('henning')) {
+      this.spawnQuestItem('quest_item_seeds', 'magic_seeds', 780, 480, 'Bio-Gourmet-Saatgut');
+    }
+    if (state.getItemCount('vintage_bong') === 0 && !state.isFriendRecruited('henning')) {
+      this.spawnQuestItem('quest_item_bong', 'vintage_bong', 240, 480, 'Kristall-Vaporizer');
+    }
+
+    // Materials
+    this.spawnMaterialItem('farm_wood_1', 'wood', 380, 450, 'Scheunen-Balken');
+    this.spawnMaterialItem('farm_scrap_1', 'scrap', 580, 490, 'Traktor-Draht');
+    this.spawnMaterialItem('farm_glow_1', 'glowstick', 820, 220, 'Pflanzen-Glow-Stick');
+
+    // Soft botanical pollen particles
+    this.zoneAtmosphereParticles = this.add.particles(0, 0, 'particle_sparkle', {
+      x: { min: 100, max: 860 },
+      y: { min: 100, max: 540 },
+      lifespan: 3000,
+      speedY: { min: -10, max: -30 },
+      scale: { start: 1.0, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      frequency: 300
+    }).setDepth(20);
+  }
+
   // --- Render Hub Upgrades dynamically ---
   private renderHubUpgrades(): void {
     const state = GameState.getInstance();
@@ -457,10 +534,10 @@ export class WorldScene extends Phaser.Scene {
       this.hubUpgrades.push(dj, spk1, spk2);
     }
 
-    // 3. Skate Lounge & Ramp (Activity Upgrade)
+    // 3. Agile Retro-Lounge & Tischkicker (Activity Upgrade)
     if (state.craftedUpgrades.has('upgrade_chill')) {
-      const ramp = this.add.image(620, 260, 'prop_skate_ramp').setDepth(6);
-      this.hubUpgrades.push(ramp);
+      const lounge = this.add.image(620, 250, 'prop_retro_lounge').setDepth(6);
+      this.hubUpgrades.push(lounge);
     }
 
     // 4. Glow Drink Bar (Drinks Upgrade)
@@ -469,7 +546,13 @@ export class WorldScene extends Phaser.Scene {
       this.hubUpgrades.push(bar);
     }
 
-    // 5. Giant Birthday Cake (Finale) - only if cake is placed on the table!
+    // 5. Bio-Hanf Smoke Lounge (Henning Upgrade)
+    if (state.craftedUpgrades.has('upgrade_smoke')) {
+      const smokeLounge = this.add.image(620, 400, 'prop_smoke_lounge').setDepth(6);
+      this.hubUpgrades.push(smokeLounge);
+    }
+
+    // 6. Giant Birthday Cake (Finale) - only if cake is placed on the table!
     if (state.isCakePlaced) {
       const cake = this.add.image(480, 305, 'prop_birthday_cake').setDepth(8);
       this.hubUpgrades.push(cake);
@@ -481,22 +564,23 @@ export class WorldScene extends Phaser.Scene {
     wall.setDepth(2).refreshBody();
   }
 
-  private createPortal(x: number, y: number, targetZone: ZoneId, name: string): void {
-    const sprite = this.add.sprite(x, y, 'prop_portal').setDepth(4);
+  private createPortal(x: number, y: number, targetZone: ZoneId, name: string, textureKey: string = 'prop_portal'): void {
+    const sprite = this.add.sprite(x, y, textureKey).setDepth(4);
     this.portals.push({ targetZone, x, y, name, sprite });
 
+    const isGreen = textureKey === 'prop_portal_green';
     const container = this.add.container(x, y - 36).setDepth(12);
     const labelTxt = this.add.text(0, 0, name, {
       fontFamily: 'Outfit, sans-serif',
       fontSize: '9.5px',
-      color: '#00ffcc',
+      color: isGreen ? '#4ade80' : '#00ffcc',
       align: 'center',
       fontStyle: 'bold',
       lineSpacing: 2
     }).setOrigin(0.5);
 
     const bgRect = this.add.rectangle(0, 0, labelTxt.width + 14, labelTxt.height + 8, 0x0a0614, 0.9)
-      .setStrokeStyle(1.2, 0x00ffcc, 0.6);
+      .setStrokeStyle(1.2, isGreen ? 0x22c55e : 0x00ffcc, 0.6);
 
     container.add([bgRect, labelTxt]);
     this.hubUpgrades.push(container);
@@ -530,10 +614,12 @@ export class WorldScene extends Phaser.Scene {
     const textureMap: { [k: string]: string } = {
       vinyl: 'item_vinyl',
       audio_cable: 'item_audio_cable',
-      skate_wheels: 'item_skate_wheels',
-      energy_drink: 'item_energy_drink',
+      sticky_notes: 'item_sticky_notes',
+      espresso: 'item_espresso',
       glow_syrup: 'item_glow_syrup',
-      fog_plug: 'item_fog_plug'
+      fog_plug: 'item_fog_plug',
+      magic_seeds: 'item_magic_seeds',
+      vintage_bong: 'item_vintage_bong'
     };
 
     const sprite = this.add.sprite(x, y, textureMap[itemId]).setDepth(4);
@@ -594,8 +680,8 @@ export class WorldScene extends Phaser.Scene {
     if (GameState.getInstance().currentZone === 'hub' && Phaser.Math.Distance.Between(px, py, 480, 320) < interactDist + 16) {
       const state = GameState.getInstance();
       this.activeInteractable = { type: 'party_table', data: null };
-      if (state.recruitedFriends.size < 3) {
-        this.showPrompt(480, 260, `🎂 [E] Partytisch (Hole erst alle Freunde! ${state.recruitedFriends.size}/3)`);
+      if (state.recruitedFriends.size < 4) {
+        this.showPrompt(480, 260, `🎂 [E] Partytisch (Hole erst alle 4 Freunde! ${state.recruitedFriends.size}/4)`);
       } else if (!state.isCakeBaked) {
         this.showPrompt(480, 260, '🎂 [E] Partytisch (Kuchen erst backen!)');
       } else if (!state.isCakePlaced) {
@@ -660,11 +746,11 @@ export class WorldScene extends Phaser.Scene {
         break;
 
       case 'party_table': {
-        if (state.recruitedFriends.size < 3) {
-          uiScene.showToast(`🧌 Hole erst alle 3 Freunde zur Party (${state.recruitedFriends.size}/3), um den Kuchen zu backen!`);
+        if (state.recruitedFriends.size < 4) {
+          uiScene.showToast(`🧌 Hole erst alle 4 Freunde zur Party (${state.recruitedFriends.size}/4), um den Kuchen zu backen!`);
           SoundEngine.getInstance().playPickup();
         } else if (!state.isCakeBaked) {
-          uiScene.showToast('🔨 Alle Freunde sind da! Backe jetzt den Kuchen an der Werkbank!');
+          uiScene.showToast('🔨 Alle 4 Freunde sind da! Backe jetzt den Kuchen an der Werkbank!');
           SoundEngine.getInstance().playPickup();
         } else if (!state.isCakePlaced) {
           this.animateCakePlacement();

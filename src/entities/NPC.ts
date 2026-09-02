@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GameState } from '../systems/GameState';
 
 export class NPC extends Phaser.Physics.Arcade.Sprite {
-  public friendId: 'olli' | 'leander' | 'candy';
+  public friendId: 'olli' | 'leander' | 'candy' | 'henning';
   public displayName: string;
   private questIcon?: Phaser.GameObjects.Sprite;
   private nameLabelContainer?: Phaser.GameObjects.Container;
@@ -13,7 +13,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     scene: Phaser.Scene,
     x: number,
     y: number,
-    friendId: 'olli' | 'leander' | 'candy',
+    friendId: 'olli' | 'leander' | 'candy' | 'henning',
     displayName: string,
     isDancing: boolean = false
   ) {
